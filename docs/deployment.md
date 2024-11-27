@@ -96,12 +96,11 @@ Laravel Forge 可以在各种基础设施提供商（如 DigitalOcean、Linode�
 ## 译者署名
 | 用户名 | 头像 | 职能 | 签名 |
 | --- | --- | --- | --- |
-| [@JokerLinly](https://laravel-china.org/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  | 翻译 | Stay Hungry. Stay Foolish. |
+| [@JokerLinly](https://learnku.com/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  | 翻译 | Stay Hungry. Stay Foolish. |
 
 ---
 
-> {note} 欢迎任何形式的转载，但请务必注明出处，尊重他人劳动共创开源社区。
 >
-> 转载请注明：本文档由 Laravel China 社区 [laravel-china.org](https://laravel-china.org) 组织翻译，详见 [翻译召集帖](https://laravel-china.org/topics/5756/laravel-55-document-translation-call-come-and-join-the-translation)。
+> 转载请注明：本文档由 LearnKu 技术论坛 [learnku.com](https://learnku.com) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
 >
-> 文档永久地址： https://d.laravel-china.org
+> 文档原地址： https://learnku.com/docs/laravel/9.x

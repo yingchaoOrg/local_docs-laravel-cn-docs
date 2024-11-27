@@ -1,191 +1,195 @@
-# Laravel 的 社会化登录功能
+# Laravel Socialite
 
 - [简介](#introduction)
-- [授权](#license)
-- [官方文档](#official-documentation)
+- [安装](#installation)
+- [升级](#upgrading-socialite)
 - [配置](#configuration)
-- [基本用法](#basic-usage)
-    - [无状态身份验证](#stateless-authentication)
-    - [检索用户详细信息](#retrieving-user-details)
-    - [从令牌检索用户详细信息](#retrieving-user-details-from-token)
+- [认证](#authentication)
+    - [路由](#routing)
+    - [身份验证和存储](#authentication-and-storage)
+    - [访问范围](#access-scopes)
+    - [可选参数](#optional-parameters)
+- [检索用户详细信息](#retrieving-user-details)
 
 <a name="introduction"></a>
 ## 简介
 
-Laravel 社会化登录通过 Facebook ， Twitter ，Google ，LinkedIn ，GitHub 和 Bitbucket 提供了一个富有表现力的，流畅的 OAuth 身份验证界面。它几乎能处理所有你害怕处理的各种样板社会认证代码。
+除了典型的基于表单的身份验证之外，Laravel 还提供了一种使用 [Laravel Socialite](https://github.com/laravel/socialite)对 OAuth providers 进行身份验证的简单方便的方法。 Socialite 目前支持 Facebook，Twitter，LinkedIn，Google，GitHub，GitLab 和 Bitbucket 的身份验证。
 
-> 翻译自 Readme： https://github.com/laravel/socialite
+> 技巧：其他平台的驱动器可以在 [Socialite Providers](https://socialiteproviders.com/) 社区驱动网站查找。
 
-**我们不接受新的适配器。**
+<a name="installation"></a>
+## 安装
 
-**如果你使用 Laravel 5.3 或更低版本，请使用 [Socialite 2.0](https://github.com/laravel/socialite/tree/2.0)。**
+在开始使用 Socialite 之前，通过 Composer 软件包管理器将软件包添加到项目的依赖项中:
 
-社区驱动的社会化登录提供商网站上可以找到为其他平台提供的适配器列表。
+```shell
+composer require laravel/socialite
+```
 
-<a name="license"></a>
-## 授权
+<a name="upgrading-socialite"></a>
+## 升级
 
-Laravel 社会化登录是根据  [MIT 授权](http://opensource.org/licenses/MIT) 许可的开源软件
-
-<a name="official-documentation"></a>
-## 官方文档
-
-除了常规的基于表单的身份验证之外， Laravel 也提供了一种简单，方便的办法来使用 [Laravel 社会化登录](https://github.com/laravel/socialite) 向 OAuth 提供程序进行身份验证。社公化登录目前支持 `Facebook` ， `Twitter` ， `LinkedIn` ，`Google` ，`GitHub` 和 `Bitbucket` 的身份验证。
-
-要开始社会化登录，使用 `composer` 将相应包加入到你项目的依赖项中。
-
-    composer require laravel/socialite
+升级到 Socialite 的新主要版本时，请务必仔细查看 [the upgrade guide](https://github.com/laravel/socialite/blob/master/UPGRADE.md).
 
 <a name="configuration"></a>
-### 配置
+## 配置
 
-安装完社会化登录库之后，在你的 `config/app.php` 文件中注册 `Laravel\Socialite\SocialiteServiceProvider` 。
+在使用 Socialite 之前，需要为应用程序使用的 OAuth 服务添加凭据。这些凭证应该放在你的 `config/services.php` 配置文件中， 并且应该使用 `facebook`， `twitter`，`linkedin`， `google`， `github`， `gitlab`， 或 `bitbucket`作为键名，取决于应用程序所需的 Providers 。例如:
 
-```php
-'providers' => [
-    // Other service providers...
+    'github' => [
+        'client_id' => env('GITHUB_CLIENT_ID'),
+        'client_secret' => env('GITHUB_CLIENT_SECRET'),
+        'redirect' => 'http://example.com/callback-url',
+    ],
 
-    Laravel\Socialite\SocialiteServiceProvider::class,
-],
-```
+> 技巧：如果 `redirect` 项的值包含一个相对路径，它将会自动解析为全称 URL。
 
-同时，在你的 `app` 配置文件中，把 `Socialite` facade 加入到 `aliases` 数组中。
 
-```php
-'Socialite' => Laravel\Socialite\Facades\Socialite::class,
-```
 
-你还需要为你应用使用的 OAuth 服务加入凭据。这些凭据应该放在你的 `config/services.php` 文件中，并且使用 `facebook` ， `twitter` ， `linkedin` ， `google` ， `github` 或 `bitbucket` 作为键名，具体取决于在你的应用中由哪个程序来提供验证服务，比如：
+<a name="authentication"></a>
+## 认证
 
-```php
-'github' => [
-    'client_id' => 'your-github-app-id',
-    'client_secret' => 'your-github-app-secret',
-    'redirect' => 'http://your-callback-url',
-],
-```
-<a name="basic-usage"></a>
-### 基本用法
+<a name="routing"></a>
+### 路由
 
-接下来，你已经准备好了验证用户了！你需要两个路由：一个重定向用户到 OAuth 提供商，另一个在提供商验证之后接收回调。我们用 `Socialite` facade 来访问：
+要使用 OAuth 提供程序对用户进行身份验证，你需要两个路由：一个用于将用户重定向到 OAuth provider，另一个用于在身份验证后接收来自 provider 的回调。下面的示例控制器演示了这两个路由的实现：
 
-```php
-<?php
+    use Laravel\Socialite\Facades\Socialite;
 
-namespace App\Http\Controllers\Auth;
-
-use Socialite;
-
-class LoginController extends Controller
-{
-    /**
-     * Redirect the user to the GitHub authentication page.
-     *
-     * @return Response
-     */
-    public function redirectToProvider()
-    {
+    Route::get('/auth/redirect', function () {
         return Socialite::driver('github')->redirect();
-    }
+    });
 
-    /**
-     * Obtain the user information from GitHub.
-     *
-     * @return Response
-     */
-    public function handleProviderCallback()
-    {
+    Route::get('/auth/callback', function () {
         $user = Socialite::driver('github')->user();
 
-        // $user->token;
-    }
-}
-```
+        // $user->token
+    });
 
- `redirect` 方法负责发送用户到 OAuth 提供商，而 `user` 方法将读取传入的请求并从提供商处检索用户信息。在重定向用户之前，你还可以加入附加的 `scope` 方法来设置请求的「scope」。这个方法会覆盖所有现有的范围。
- 
-```php
-return Socialite::driver('github')
-            ->scopes(['scope1', 'scope2'])->redirect();
-```
+`redirect` 提供的方法 `Socialite` facade 负责将用户重定向到 OAuth provider，而该 user 方法将读取传入的请求并在身份验证后从提供程序中检索用户的信息。
 
-你可以使用 `setScopes` 方法覆盖所有已经存在的 scopes：
+<a name="authentication-and-storage"></a>
+### 身份验证和存储
 
-```php
-return Socialite::driver('github')
-            ->setScopes(['scope1', 'scope2'])->redirect();
-```
+从 OAuth 提供程序检索到用户后，你可以确定该用户是否存在于应用程序的数据库中并[验证用户](/docs/laravel/9.x/authentication#authenticate-a-user-instance)。如果用户在应用程序的数据库中不存在，通常会在数据库中创建一条新记录来代表该用户：
 
-当然，你需要定义通往你的控制器方法的路由。
+    use App\Models\User;
+    use Illuminate\Support\Facades\Auth;
+    use Laravel\Socialite\Facades\Socialite;
 
-```php
-Route::get('login/github', 'Auth\LoginController@redirectToProvider');
-Route::get('login/github/callback', 'Auth\LoginController@handleProviderCallback');
-```
+    Route::get('/auth/callback', function () {
+        $githubUser = Socialite::driver('github')->user();
 
-一部分 OAuth 提供商在重定向请求中支持携带可选参数。要在请求中包含任何可选参数，调用 `with` 方法时传入可选的数组即可。
+        $user = User::where('github_id', $githubUser->id)->first();
 
-```php
-return Socialite::driver('google')
-            ->with(['hd' => 'example.com'])->redirect();
-```
+        if ($user) {
+            $user->update([
+                'github_token' => $githubUser->token,
+                'github_refresh_token' => $githubUser->refreshToken,
+            ]);
+        } else {
+            $user = User::create([
+                'name' => $githubUser->name,
+                'email' => $githubUser->email,
+                'github_id' => $githubUser->id,
+                'github_token' => $githubUser->token,
+                'github_refresh_token' => $githubUser->refreshToken,
+            ]);
+        }
 
-当使用 `with` 方法时，注意不要传递保留关键字，比如 `state` 或 `response_type` 。
+        Auth::login($user);
 
-<a name="stateless-authentication"></a>
-#### 无状态身份验证
+        return redirect('/dashboard');
+    });
 
- `stateless` 方法可以用于禁用 session 状态的验证，这个方法在向 API 添加社会化身份验证时非常有用。
+> 技巧：有关特定 OAuth 提供商提供哪些用户信息的更多信息，请参阅有关 [检索用户详细信息](#retrieving-user-details) 的文档。
 
-```php
-return Socialite::driver('google')->stateless()->user();
-```
+
+<a name="access-scopes"></a>
+### 访问作用域
+
+在重定向用户之前，你还可以使用 `scopes` 方法在请求中添加其他「作用域」。此方法会将所有现有作用域与你提供的作用域合并：
+
+    use Laravel\Socialite\Facades\Socialite;
+
+    return Socialite::driver('github')
+        ->scopes(['read:user', 'public_repo'])
+        ->redirect();
+
+你可以使用 `setScopes` 方法覆盖所有现有范围：
+
+    return Socialite::driver('github')
+        ->setScopes(['read:user', 'public_repo'])
+        ->redirect();
+
+<a name="optional-parameters"></a>
+### 可选参数
+
+许多 OAuth providers 支持重定向请求中的可选参数。 要在请求中包含任何可选参数，请使用关联数组调用 `with` 方法：
+
+    use Laravel\Socialite\Facades\Socialite;
+
+    return Socialite::driver('google')
+        ->with(['hd' => 'example.com'])
+        ->redirect();
+
+> 注意：使用  `with` 方法时, 注意不要传递任何保留的关键字，例如 `state` 或 `response_type`。
 
 <a name="retrieving-user-details"></a>
-#### 检索用户详细信息
+## 检索用户详细信息
 
-一旦你有了一个用户实例，你可以获取这个用户的更多详细信息：
+在将用户重定向回你的身份验证回调路由之后，你可以使用 Socialite 的 `user` 方法检索用户的详细信息。`user` 方法为返回的用户对象提供了各种属性和方法，你可以使用这些属性和方法在你自己的数据库中存储有关该用户的信息。你可以使用不同的属性和方法这取决于要进行身份验证的 OAuth 提供程序是否支持 OAuth 1.0 或 OAuth 2.0：
 
-```php
-$user = Socialite::driver('github')->user();
+    use Laravel\Socialite\Facades\Socialite;
 
-// OAuth Two Providers
-$token = $user->token;
-$refreshToken = $user->refreshToken; // not always provided
-$expiresIn = $user->expiresIn;
+    Route::get('/auth/callback', function () {
+        $user = Socialite::driver('github')->user();
 
-// OAuth One Providers
-$token = $user->token;
-$tokenSecret = $user->tokenSecret;
+        // OAuth 2.0 providers...
+        $token = $user->token;
+        $refreshToken = $user->refreshToken;
+        $expiresIn = $user->expiresIn;
 
-// All Providers
-$user->getId();
-$user->getNickname();
-$user->getName();
-$user->getEmail();
-$user->getAvatar();
-```
-<a name="retrieving-user-details-from-token"></a>
-#### 从令牌检索用户详细信息
+        // OAuth 1.0 providers...
+        $token = $user->token;
+        $tokenSecret = $user->tokenSecret;
 
-如果你已经有了一个用户的有效访问令牌，你可以使用 `userFromToken` 方法检索用户的详细信息。
-
-```php
-$user = Socialite::driver('github')->userFromToken($token);
-```
+        // All providers...
+        $user->getId();
+        $user->getNickname();
+        $user->getName();
+        $user->getEmail();
+        $user->getAvatar();
+    });
 
 
-## 译者署名
 
-| 用户名 | 头像 | 职能 | 签名 |
-|---|---|---|---|
-| [@qufo](https://github.com/qufo)  | <img class="avatar-66 rm-style" src="https://avatars1.githubusercontent.com/u/2526883?v=3&s=460?imageView2/1/w/100/h/100">  |  翻译  | 欢迎共同探讨。[@Qufo](https://github.com/qufo) |
+<a name="retrieving-user-details-from-a-token-oauth2"></a>
+#### 从令牌中检索用户详细信息 (OAuth2)
 
+如果你已经有了一个用户的有效访问令牌，你可以使用 Socialite 的 `userFromToken` 方法检索其详细信息：
 
---- 
+    use Laravel\Socialite\Facades\Socialite;
 
-> {note} 欢迎任何形式的转载，但请务必注明出处，尊重他人劳动共创开源社区。
-> 
-> 转载请注明：本文档由 Laravel China 社区 [laravel-china.org](https://laravel-china.org) 组织翻译，详见 [翻译召集帖](https://laravel-china.org/topics/5756/laravel-55-document-translation-call-come-and-join-the-translation)。
-> 
-> 文档永久地址： https://d.laravel-china.org
+    $user = Socialite::driver('github')->userFromToken($token);
+
+<a name="retrieving-user-details-from-a-token-and-secret-oauth1"></a>
+#### 从令牌和秘钥中检索用户的详细信息 (OAuth1)
+
+如果你已经有了一对有效的用户令牌/秘钥，你可以使用 Socialite 的 `userFromTokenAndSecret` 方法检索他们的详细信息：
+
+    use Laravel\Socialite\Facades\Socialite;
+
+    $user = Socialite::driver('twitter')->userFromTokenAndSecret($token, $secret);
+
+<a name="stateless-authentication"></a>
+#### 无认证状态
+
+`stateless` 方法可用于禁用会话状态验证。 这在向 API 添加社交身份验证时非常有用：
+
+    use Laravel\Socialite\Facades\Socialite;
+
+    return Socialite::driver('google')->stateless()->user();
+
+> 注意：Twitter 驱动程序不支持无状态身份验证，它使用 OAuth 1.0 进行身份验证

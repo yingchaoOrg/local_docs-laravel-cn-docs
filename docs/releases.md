@@ -25,7 +25,7 @@ Laravel 的版本控制方案继续以下约定： `主版本号.次版本号.�
 对于 LTS 版本，例如 Laravel 5.1，提供两年的错误修复和三年的安全修复。这些版本提供最长时间的支持和维护。对于一般版本，则只是提供六个月的错误修复和为期一年的安全修复。
 
 
-> [Laravel 的发布路线图](https://laravel-china.org/articles/2594/laravel-release-roadmap) - by [Summer](https://github.com/summerblue)
+> [Laravel 的发布路线图](https://learnku.com/articles/2594/laravel-release-roadmap) - by [Summer](https://github.com/summerblue)
 
 <a name="laravel-5.5"></a>
 ## Laravel 5.5
@@ -490,13 +490,12 @@ Redis 和 Memcached 缓存驱动程序现在支持获取和释放原子「锁」
 | 用户名 | 头像 | 职能 | 签名 |
 |---|---|---|---|
 | [@dongm2ez](https://github.com/dongm2ez)  | <img class="avatar-66 rm-style" src="https://avatars3.githubusercontent.com/u/9032795?v=3&s=460?imageView2/1/w/100/h/100">  |  翻译  | 欢迎在 [Github](https://github.com/dongm2ez) 上关注我 |
-| [@JokerLinly](https://laravel-china.org/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  |  Review  | Stay Hungry. Stay Foolish. |
+| [@JokerLinly](https://learnku.com/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  |  Review  | Stay Hungry. Stay Foolish. |
 
 
 ---
 
-> {note} 欢迎任何形式的转载，但请务必注明出处，尊重他人劳动共创开源社区。
 >
-> 转载请注明：本文档由 Laravel China 社区 [laravel-china.org](https://laravel-china.org) 组织翻译，详见 [翻译召集帖](https://laravel-china.org/topics/5756/laravel-55-document-translation-call-come-and-join-the-translation)。
+> 转载请注明：本文档由 LearnKu 技术论坛 [learnku.com](https://learnku.com) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
 >
-> 文档永久地址： https://d.laravel-china.org
+> 文档原地址： https://learnku.com/docs/laravel/9.x

@@ -1,45 +1,42 @@
-# Laravel 测试之 - 数据库测试
+# 数据库测试
 
-- [简介](#introduction)
-- [每次测试后重置数据库](#resetting-the-database-after-each-test)
-- [创建模型工厂](#writing-factories)
+- [介绍](#introduction)
+    - [每次测试后重置数据库](#resetting-the-database-after-each-test)
+- [定义模型的工厂](#defining-model-factories)
+    - [概念概述](#concept-overview)
+    - [创建工厂](#generating-factories)
     - [工厂状态](#factory-states)
-- [在测试中使用模型工厂](#using-factories)
-    - [创建模型](#creating-models)
+    - [工厂回调](#factory-callbacks)
+- [使用工厂创建模型](#creating-models-using-factories)
+    - [实例化模型](#instantiating-models)
     - [持久化模型](#persisting-models)
-    - [模型关联](#relationships)
-- [可用的断言方法](#available-assertions)
+    - [序列](#sequences)
+- [工厂关系](#factory-relationships)
+    - [一对多关系](#has-many-relationships)
+    - [一对多（反向）关系](#belongs-to-relationships)
+    - [多对多关系](#many-to-many-relationships)
+    - [多态关系](#polymorphic-relationships)
+    - [定义工厂内部关系](#defining-relationships-within-factories)
+- [运行 Seeders](#running-seeders)
+- [可用断言](#available-assertions)
 
 <a name="introduction"></a>
-## 简介
+## 介绍
 
-Laravel 提供了多种有用的工具来让你更容易的测试使用数据库的应用程序。首先，你可以使用 `assertDatabaseHas` 辅助函数，来断言数据库中是否存在与指定条件互相匹配的数据。举例来说，如果我们想验证 `users` 数据表中是否存在 `email` 值为 `sally@example.com` 的数据，我们可以按照以下的方式来做测试：
-
-    public function testDatabase()
-    {
-        // 创建调用至应用程序...
-
-        $this->assertDatabaseHas('users', [
-            'email' => 'sally@example.com'
-        ]);
-    }
-       
-你也可以使用 `assertDatabaseMissing` 辅助函数来断言数据不在数据库中。
-
-当然，使用 `assertDatabaseHas` 方法及其它的辅助函数只是为了方便。你也可以随意使用 PHPUnit 内置的所有断言方法来扩充测试。
+Laravel 提供了各种有用的工具和断言，使测试数据库驱动的应用程序更加容易。此外，Laravel 模型工厂和 Seeders 可以轻松地使用应用程序的 Eloquent 模型和关系创建测试数据库记录。我们将在下面的文档中讨论所有这些强大的功能。
 
 <a name="resetting-the-database-after-each-test"></a>
-## 每次测试后重置数据库
+### 每次测试后重置数据库
 
-在每次测试后重新设置数据库通常很有用，这样以前测试的数据不会干扰后续的测试。`RefreshDatabase` trait 会采用最优的方法来迁移你的测试数据库，这取决于你使用的是内存数据库还是传统数据库。在你的测试类中简单地引用这个 trait，一切都将为你处理：
+在继续进行之前，让我们讨论如何在每个测试之后重置数据库，以便前一个测试的数据不会干扰后续测试。Laravel 包含的 Trait`Illuminate\Foundation\Testing\RefreshDatabase` 将为你解决这一问题。只需在测试类上使用这个 Trait：
 
     <?php
 
     namespace Tests\Feature;
 
-    use Tests\TestCase;
     use Illuminate\Foundation\Testing\RefreshDatabase;
     use Illuminate\Foundation\Testing\WithoutMiddleware;
+    use Tests\TestCase;
 
     class ExampleTest extends TestCase
     {
@@ -50,7 +47,7 @@ Laravel 提供了多种有用的工具来让你更容易的测试使用数据库
          *
          * @return void
          */
-        public function testBasicExample()
+        public function test_basic_example()
         {
             $response = $this->get('/');
 
@@ -58,163 +55,630 @@ Laravel 提供了多种有用的工具来让你更容易的测试使用数据库
         }
     }
 
-<a name="writing-factories"></a>
-## 创建模型工厂
+如果你的数据库模式（Schema）是最新的，那么这个 Trait`Illuminate\Foundation\Testing\RefreshDatabase` 并不会迁移数据库。相反，它将只在一个数据库事务中执行测试。因此，任何由测试用例添加到数据库的记录，如果不使用这个 Trait，可能仍然存在于数据库中。
 
-测试时，常常需要在运行测试之前写入一些数据到数据库中。创建测试数据时，除了手动的来设置每个字段的值，还可以使用 [Eloquent 模型](/docs/{{version}}/eloquent) 的「工厂」来设置每个属性的默认值。在开始之前，你可以先查看下应用程序的 `database/factories/UserFactory.php` 文件。此文件包含了一个现成的模型工厂定义：
 
-    $factory->define(App\User::class, function (Faker\Generator $faker) {
-        static $password;
+如果你想使用迁移来完全重置数据库，可以使用 Trait `Illuminate\Foundation\Testing\DatabaseMigrations` 来代替。然而，`DatabaseMigrations`Trait 明显比 `RefreshDatabase` Trait 慢。
 
-        return [
-            'name' => $faker->name,
-            'email' => $faker->unique()->safeEmail,
-            'password' => $password ?: $password = bcrypt('secret'),
-            'remember_token' => str_random(10),
-        ];
-    });
+<a name="defining-model-factories"></a>
+## 定义模型工厂
 
-在作为工厂定义的闭包中，你可以返回模型上所有属性的默认测试值。 闭包将接收 PHP 函数库 [Faker](https://github.com/fzaninotto/Faker) 的一个实例，它允许你方便地生成各种随机数据进行测试。
+<a name="concept-overview"></a>
+### 概念概述
 
-为了更好的组织代码，你也可以自己为每个数据模型创建对应的模型工厂类。例如，你可以在 `database/factories` 目录下创建 `UserFactory.php` 和 `CommentFactory.php` 文件。 Laravel 将会自动加载 `factories` 目录下的所有文件。
+首先，让我们谈谈 Eloquent 模型工厂。测试时，你可能需要在执行测试之前向数据库中插入一些记录。 Laravel 允许你使用模型工厂为每个 [Eloquent 模型](/docs/laravel/9.x/eloquent) 定义一组默认属性，而不是在创建测试数据时手动指定每一列的值。
+
+要了解如何编写工厂的示例，请查看应用程序中的 `database/factories/UserFactory.php` 文件。这个工厂包含在所有新的 Laravel 源码程序中，并包含以下工厂定义：
+
+    namespace Database\Factories;
+
+    use App\Models\User;
+    use Illuminate\Database\Eloquent\Factories\Factory;
+    use Illuminate\Support\Str;
+
+    class UserFactory extends Factory
+    {
+        /**
+         * 定义模型的默认值。
+         *
+         * @return array
+         */
+        public function definition()
+        {
+            return [
+                'name' => $this->faker->name,
+                'email' => $this->faker->unique()->safeEmail,
+                'email_verified_at' => now(),
+                'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
+                'remember_token' => Str::random(10),
+            ];
+        }
+    }
+
+正如你所见，在最基本的形式中，factories 是继承 Laravel 的基础 factory 类和定义 `definition` 方法的类。`definition` 方法返回使用 factory 创建模型时应用的默认属性值集合。
+
+通过 `faker` 属性， factories 可以访问 [Faker](https://github.com/FakerPHP/Faker)  PHP 函数库，它允许你便捷的生成各种随机数据来进行测试。
+
+> 技巧：你也可以在 `config/app.php` 配置文件中添加 `faker_locale` 选项来设置 Faker 的语言环境。
+
+<a name="generating-factories"></a>
+### 创建工厂
+
+要创建工厂，请使用 [Artisan 命令](/docs/laravel/9.x/artisan) `make:factory`：
+
+```shell
+php artisan make:factory PostFactory
+```
+
+新工厂将放置在你的 `database/factories` 目录下。
+
+<a name="factory-and-model-discovery-conventions"></a>
+#### 模型和工厂的关联约定
+
+定义工厂后，可以在模型中使用 `Illuminate\Database\Eloquent\Factories\HasFactory` 特性提供的 `factory` 静态方法，来为模型实例化工厂。
+
+`HasFactory` 特性的 `factory` 方法将按约定来为模型确定合适的工厂。具体来说，该方法将在 `Database\Factorys` 的命名空间下查找类名与模型名相匹配，并以 `Factory` 为后缀的工厂。如果当前约定不适用于你的特定应用程序或工厂，你可以重写模型中的 `newFactory` 方法，返回模型实际对应的工厂实例：
+
+    use Database\Factories\Administration\FlightFactory;
+
+    /**
+     * 为当前模型创建一个工厂实例
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    protected static function newFactory()
+    {
+        return FlightFactory::new();
+    }
+
+接下来，在对应的工厂中定义 `model` 属性：
+
+    use App\Administration\Flight;
+    use Illuminate\Database\Eloquent\Factories\Factory;
+
+    class FlightFactory extends Factory
+    {
+        /**
+         * 工厂对应的模型名称
+         *
+         * @var string
+         */
+        protected $model = Flight::class;
+    }
 
 <a name="factory-states"></a>
 ### 工厂状态
 
-工厂状态可以让你任意组合你的模型工厂，仅需要做出适当差异化的修改，就可以达到让模型拥有多种不同的状态。例如，你的 `用户` 模型中可以修改某个默认属性值来达到标识一种 `欠款` 的状态。你可以使用 `state` 方法来进行这种状态转换。对于简单的工厂状态，你可以直接传入要修改的属性数组。
+你可以定义各自独立的状态操作方法，并可以任意组合应用于你的模型工厂。例如，你的 `Database\Factories\UserFactory` 工厂可能包含修改其默认属性值的 `suspended` 状态方法
 
-    $factory->state(App\User::class, 'delinquent', [
-        'account_status' => 'delinquent',
-    ]);
 
-如果你的工厂状态需要计算或者需要使用 `$faker` 实例，你可以使用闭包方法来实现状态属性的修改：
 
-    $factory->state(App\User::class, 'address', function ($faker) {
-        return [
-            'address' => $faker->address,
-        ];
-    });
+状态转换方法通常会调用 Laravel 的基础工厂类提供的 `state` 方法 。 `state` 方法接收一个闭包，该闭包将收到工厂的原始属性数组，并应该返回要修改的属性数组：
 
-<a name="using-factories"></a>
-## 在测试中使用模型工厂
-
-<a name="creating-models"></a>
-### 创建模型
-
-在模型工厂定义后，就可以在测试或是数据库的填充文件中，通过全局的 `factory` 函数来生成模型实例。接着让我们先来看看几个创建模型的例子。首先我们会使用 `make` 方法创建模型，但不将它们保存至数据库：
-
-    public function testDatabase()
+    /**
+     * 标识用户已停用
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    public function suspended()
     {
-        $user = factory(App\User::class)->make();
+        return $this->state(function (array $attributes) {
+            return [
+                'account_status' => 'suspended',
+            ];
+        });
+    }
+
+<a name="factory-callbacks"></a>
+### 工厂回调
+
+工厂回调是通过 `afterMaking` 和 `afterCreating` 方法来注册的，并且允许你在创建模型之后执行其他任务。 你应该通过在工厂类上定义 `configure` 方法来注册这些回调。 实例化工厂后，Laravel 将自动调用此方法：
+
+    namespace Database\Factories;
+
+    use App\Models\User;
+    use Illuminate\Database\Eloquent\Factories\Factory;
+    use Illuminate\Support\Str;
+
+    class UserFactory extends Factory
+    {
+        /**
+         * 配置模型工厂
+         *
+         * @return $this
+         */
+        public function configure()
+        {
+            return $this->afterMaking(function (User $user) {
+                //
+            })->afterCreating(function (User $user) {
+                //
+            });
+        }
+
+        // ...
+    }
+
+<a name="creating-models-using-factories"></a>
+## 使用工厂创建模型
+
+<a name="instantiating-models"></a>
+### 实例化模型
+
+一旦你定义了工厂，就可以使用 `Illuminate\Database\Eloquent\Factories\HasFactory` 特性为你的模型提供的 `factory` 静态方法来实例化工厂。让我们来看几个创建模型的例子。首先，我们将使用 `make` 方法来创建模型而且不需要将它们持久化到数据库中：
+
+    use App\Models\User;
+
+    public function test_models_can_be_instantiated()
+    {
+        $user = User::factory()->make();
 
         // 在测试中使用模型...
     }
 
-你也可以创建一个含有多个模型的集合，或创建一个指定类型的模型：
 
-    // 创建一个 App\User 实例
-    $users = factory(App\User::class, 3)->make();
 
-#### 应用模型工厂状态
+你可以使用 `count` 方法创建许多模型的集合：
 
-你可能需要在你的模型中应用不同的 [模型工厂状态](#factory-states)。如果你想模型加上多种不同的状态，你只须指定每个你想添加的状态名称即可：
+    $users = User::factory()->count(3)->make();
 
-    $users = factory(App\User::class, 5)->states('delinquent')->make();
+<a name="applying-states"></a>
+#### 应用各种状态
 
-    $users = factory(App\User::class, 5)->states('premium', 'delinquent')->make();
+你也可以应用你的任何一个 [states](#factory-states) 到模型. 如果你想向模型应用多个状态转换，则可以直接调用状态转换方法：
 
-#### 重写模型属性
+    $users = User::factory()->count(5)->suspended()->make();
 
-如果你想重写模型中的某些默认值，则可以传递一个包含数值的数组至 `make` 方法。只有指定的数值会被替换，其它剩余的数值则会按照模型工厂指定的默认值来设置：
+<a name="overriding-attributes"></a>
+#### 覆盖属性
 
-    $user = factory(App\User::class)->make([
-        'name' => 'Abigail',
+如果你想覆盖模型的一些默认值, 你可以将数组传递给`make`方法. 只有指定的属性将被替换，而这些属性的其余部分保持设置为其默认值，则为出厂指定：
+
+    $user = User::factory()->make([
+        'name' => 'Abigail Otwell',
     ]);
+
+或者，可以直接在出厂实例上调用`state`方法以执行内联状态转换：
+
+    $user = User::factory()->state([
+        'name' => 'Abigail Otwell',
+    ])->make();
+
+> 技巧：[批量分配保护](/docs/laravel/9.x/eloquent#mass-assignment) 使用工厂创建模型时会自动禁用.
 
 <a name="persisting-models"></a>
 ### 持久化模型
 
-`create` 方法不仅会创建模型实例，同时会使用 Eloquent 的 `save` 方法来将它们保存至数据库：
+`create` 方法创建模型实例，并使用  Eloquent 的 `save` 方法其持久化到数据库中：
 
-    public function testDatabase()
+    use App\Models\User;
+
+    public function test_models_can_be_persisted()
     {
-        // 创建一个 App\User 实例
-        $user = factory(App\User::class)->create();
+        // 创建单个 App\Models\User 实例...
+        $user = User::factory()->create();
 
-        // 创建 3 个 App\User 实例
-        $users = factory(App\User::class, 3)->create();
+        // 创建三个 App\Models\User 实例...
+        $users = User::factory()->count(3)->create();
 
         // 在测试中使用模型...
     }
 
-同样的，你可以在数组传递至 `create` 方法时重写模型的属性
+你可以通过将属性数组传递给 `create` 方法来覆盖模型上的属性：
 
-    $user = factory(App\User::class)->create([
+    $user = User::factory()->create([
         'name' => 'Abigail',
     ]);
 
-<a name="relationships"></a>
-### 模型关联
 
-在本例中，我们还会增加关联至我们所创建的模型。当使用 `create` 方法创建多个模型时，它会返回一个 Eloquent [集合实例](/docs/{{version}}/eloquent-collections)，让你能够使用集合所提供的便利函数，像是 `each`：
 
-    $users = factory(App\User::class, 3)
-               ->create()
-               ->each(function ($u) {
-                    $u->posts()->save(factory(App\Post::class)->make());
-                });
+<a name="sequences"></a>
+### 序列
 
-#### 关联和属性闭包
+有时，你可能希望为每个创建的模型替换给定模型属性的值。 你可以通过将状态转换定义为 Sequence 实例来完成此操作。 例如，我们可能希望为每个创建的用户在 User 模型上的 `admin` 列的值在 `Y` 和 `N` 之间切换：
 
-你可以使用闭包参数来创建模型关联。例如你想在创建一个 `Post` 时顺便创建一个 `User` 实例，可以这样定义：
+    use App\Models\User;
+    use Illuminate\Database\Eloquent\Factories\Sequence;
 
-    $factory->define(App\Post::class, function ($faker) {
+    $users = User::factory()
+                    ->count(10)
+                    ->state(new Sequence(
+                        ['admin' => 'Y'],
+                        ['admin' => 'N'],
+                    ))
+                    ->create();
+
+在本例中，将创建 5 个用户 `admin` 值为 `Y`，创建另外 5 个用户 `admin` 值为 `N`。
+
+如有必要，你可以引入闭包作为 sequence 的值，每次 sequence 需要新值的时候这个闭包都会被调用。
+
+    $users = User::factory()
+                    ->count(10)
+                    ->state(new Sequence(
+                        fn ($sequence) => ['role' => UserRoles::all()->random()],
+                    ))
+                    ->create();
+
+在序列闭包中，你可以访问注入闭包的序列实例的 `$index` 或 `$count` 属性。 `$index` 属性包含到目前为止已发生的序列的迭代次数，而 `$count` 属性包含将调用序列的总次数：
+
+    $users = User::factory()
+                    ->count(10)
+                    ->sequence(fn ($sequence) => ['name' => 'Name '.$sequence->index])
+                    ->create();
+
+<a name="factory-relationships"></a>
+## 工厂关系
+
+<a name="has-many-relationships"></a>
+### 一对多关系
+
+接下来，让我们探索使用 Laravel 流畅的工厂方法建立 Eloquent 模型关系。 首先，假设我们的应用程序具有 `App\Models\User` 模型和 `App\Models\Post` 模型。同样，假设 `User` 模型定义了与 `Post` 的 `hasMany` 关系 。 我们可以通过 Laravel 的工厂提供的 `has` 方法创建一个拥有三个帖子的用户。 `has` 方法接受工厂实例：
+
+    use App\Models\Post;
+    use App\Models\User;
+
+    $user = User::factory()
+                ->has(Post::factory()->count(3))
+                ->create();
+
+
+
+按照惯例，在将 `Post` 模型传递给 `has` 方法时，Laravel 会假设 `User` 模型必须有一个定义关系的 `posts` 方法。如有必要，你可以明确指定要操作的关系的名称：
+
+    $user = User::factory()
+                ->has(Post::factory()->count(3), 'posts')
+                ->create();
+
+当然，你可以对相关模型执行状态操作。此外，如果状态更改需要访问父模型，则可以传递基于闭包的状态转换：
+
+    $user = User::factory()
+                ->has(
+                    Post::factory()
+                            ->count(3)
+                            ->state(function (array $attributes, User $user) {
+                                return ['user_type' => $user->type];
+                            })
+                )
+                ->create();
+
+<a name="has-many-relationships-using-magic-methods"></a>
+#### 使用魔术方法
+
+为了方便起见 ，你可以使用 Laravel 的 魔术工厂关系方法来构建关系。例如，以下示例将使用约定来确定应通过 `User` 模型上的 `posts` 关系方法创建相关模型：
+
+    $user = User::factory()
+                ->hasPosts(3)
+                ->create();
+
+在使用魔术方法创建工厂关系时，你可以传递要在相关模型上覆盖的属性数组：
+
+    $user = User::factory()
+                ->hasPosts(3, [
+                    'published' => false,
+                ])
+                ->create();
+
+如果状态更改需要访问父模型，你可以提供基于闭包的状态转换：
+
+    $user = User::factory()
+                ->hasPosts(3, function (array $attributes, User $user) {
+                    return ['user_type' => $user->type];
+                })
+                ->create();
+
+<a name="belongs-to-relationships"></a>
+### 从属关系
+
+既然我们已经探索了如何使用工厂构建「has many」关系，那么让我们来看看该关系的反面。`for` 方法可用于定义工厂创建的模型所属的父模型。例如，我们可以创建三个属于单个用户的 `App\Models\Post` 模型实例：
+
+    use App\Models\Post;
+    use App\Models\User;
+
+    $posts = Post::factory()
+                ->count(3)
+                ->for(User::factory()->state([
+                    'name' => 'Jessica Archer',
+                ]))
+                ->create();
+
+
+
+如果你已经有一个应该与你正在创建的模型相关联的父模型实例，可以传递这个模型实例给 `for` 方法：
+
+    $user = User::factory()->create();
+
+    $posts = Post::factory()
+                ->count(3)
+                ->for($user)
+                ->create();
+
+<a name="belongs-to-relationships-using-magic-methods"></a>
+#### 从属关系使用魔法方法
+
+为方便起见，你可以使用工厂的魔术关系方法来定义「属于」关系。例如，下面的示例将使用约定来确定这三个帖子应该属于 `Post` 模型上的 `user` 关系：
+
+    $posts = Post::factory()
+                ->count(3)
+                ->forUser([
+                    'name' => 'Jessica Archer',
+                ])
+                ->create();
+
+<a name="many-to-many-relationships"></a>
+### 多对多关系
+
+像 [一对多关系](#has-many-relationships),一样，可以使用 ` has` 方法创建「多对多」关系：
+
+    use App\Models\Role;
+    use App\Models\User;
+
+    $user = User::factory()
+                ->has(Role::factory()->count(3))
+                ->create();
+
+<a name="pivot-table-attributes"></a>
+#### Pivot (中转) 表属性
+
+如果需要定义应该在链接模型的中转表 / 中间表上设置的属性，可以使用 `hasAttached` 方法。此方法接受中转表属性名称和值的数组作为其第二个参数：
+
+    use App\Models\Role;
+    use App\Models\User;
+
+    $user = User::factory()
+                ->hasAttached(
+                    Role::factory()->count(3),
+                    ['active' => true]
+                )
+                ->create();
+
+如果你的状态更改需要访问相关模型，则可以提供基于闭包的状态转换：
+
+    $user = User::factory()
+                ->hasAttached(
+                    Role::factory()
+                        ->count(3)
+                        ->state(function (array $attributes, User $user) {
+                            return ['name' => $user->name.' Role'];
+                        }),
+                    ['active' => true]
+                )
+                ->create();
+
+
+
+你可以通过将模型实例传递给 `hasAttached` 方法的形式，将其附加到正在创建的模型实例中。下面示例中是将三个相同的角色附加到三个用户：
+
+    $roles = Role::factory()->count(3)->create();
+
+    $user = User::factory()
+                ->count(3)
+                ->hasAttached($roles, ['active' => true])
+                ->create();
+
+<a name="many-to-many-relationships-using-magic-methods"></a>
+#### 多对多关系使用魔术方法
+
+为方便起见，你可以使用工厂的魔术关系方法来定义多对多关系。例如，下面的示例将使用约定来确定应通过  `User` 模型上的 `Roles` 关系方法创建相关模型：
+
+    $user = User::factory()
+                ->hasRoles(1, [
+                    'name' => 'Editor'
+                ])
+                ->create();
+
+<a name="polymorphic-relationships"></a>
+### 多态关系
+
+[多态关系](/docs/laravel/9.x/eloquent-relationships#polymorphic-relationships) 也可以使用工厂创建。多态的 「morph many」关系的创建方式与典型的 「has many」 关系的创建方式相同。例如，如果 `App\Models\Post` 模型与 `App\Models\Comment` 模型存在 `morMany` 关系：
+
+    use App\Models\Post;
+
+    $post = Post::factory()->hasComments(3)->create();
+
+<a name="morph-to-relationships"></a>
+#### 变形关系
+
+魔术方法不能用于创建 `morTo` 关系。相反，必须直接使用 `for` 方法，并且必须显式提供关系的名称。例如，假设 `Comment` 模型有一个 `commentable` 方法，该方法定义了一个 `morTo` 关系。在这种情况下，我们可以直接使用 `for` 方法创建属于单个帖子的三条评论：
+
+    $comments = Comment::factory()->count(3)->for(
+        Post::factory(), 'commentable'
+    )->create();
+
+
+
+<a name="polymorphic-many-to-many-relationships"></a>
+#### 多态多对多关系
+
+可以像创建非多态的 「多对多」 关系一样创建多态的「多对多」(`morphToMany` / `morphedByMany`)关系：
+
+    use App\Models\Tag;
+    use App\Models\Video;
+
+    $videos = Video::factory()
+                ->hasAttached(
+                    Tag::factory()->count(3),
+                    ['public' => true]
+                )
+                ->create();
+
+当然，魔术 `has` 方法也可以用于创建多态「多对多」关系：
+
+    $videos = Video::factory()
+                ->hasTags(3, ['public' => true])
+                ->create();
+
+<a name="defining-relationships-within-factories"></a>
+### 定义工厂内的关系
+
+要在模型工厂中定义关系，通常会将新工厂实例分配给关系的外键。这通常用于「反向」关系，像 `belongsTo` 和 `morphTo` 关系。例如，如果你想在创建帖子的同时创建一个新用户，你可以执行以下操作：
+
+    use App\Models\User;
+
+    /**
+     * 定义模型的默认状态
+     *
+     * @return array
+     */
+    public function definition()
+    {
         return [
-            'title' => $faker->title,
-            'content' => $faker->paragraph,
-            'user_id' => function () {
-                return factory(App\User::class)->create()->id;
-            }
+            'user_id' => User::factory(),
+            'title' => $this->faker->title(),
+            'content' => $this->faker->paragraph(),
         ];
-    });
+    }
 
-这些闭包也可以获取到生成的模型工厂包含的属性数组：
+如果关系的列依赖于定义它的工厂，你可以为属性分配一个闭包。闭包将接收工厂的评估属性数组：
 
-    $factory->define(App\Post::class, function ($faker) {
+    /**
+     * 定义模型的默认状态
+     *
+     * @return array
+     */
+    public function definition()
+    {
         return [
-            'title' => $faker->title,
-            'content' => $faker->paragraph,
-            'user_id' => function () {
-                return factory(App\User::class)->create()->id;
+            'user_id' => User::factory(),
+            'user_type' => function (array $attributes) {
+                return User::find($attributes['user_id'])->type;
             },
-            'user_type' => function (array $post) {
-                return App\User::find($post['user_id'])->type;
-            }
+            'title' => $this->faker->title(),
+            'content' => $this->faker->paragraph(),
         ];
-    });
+    }
+
+<a name="running-seeders"></a>
+## 运行填充
+
+如果你在功能测试时希望使用 [数据库填充](/docs/laravel/9.x/seeding) 来填充你的数据库， 你可以调用 `seed` 方法。 默认情况下，  `seed` 方法将会执行 `DatabaseSeeder`， 它应该执行你的所有其他种子器。或者，你传递指定的种子器类名给 `seed` 方法：
+
+    <?php
+
+    namespace Tests\Feature;
+
+    use Database\Seeders\OrderStatusSeeder;
+    use Database\Seeders\TransactionStatusSeeder;
+    use Illuminate\Foundation\Testing\RefreshDatabase;
+    use Illuminate\Foundation\Testing\WithoutMiddleware;
+    use Tests\TestCase;
+
+    class ExampleTest extends TestCase
+    {
+        use RefreshDatabase;
+
+        /**
+         * 测试创建新订单
+         *
+         * @return void
+         */
+        public function test_orders_can_be_created()
+        {
+            // 运行 DatabaseSeeder...
+            $this->seed();
+
+            // 运行指定填充...
+            $this->seed(OrderStatusSeeder::class);
+
+            // ...
+
+            // 运行指定数组内填充...
+            $this->seed([
+                OrderStatusSeeder::class,
+                TransactionStatusSeeder::class,
+                // ...
+            ]);
+        }
+    }
+
+
+
+或者，你可以指示 `RefreshDatabase` trait 在每次测试之前自动为数据库填充数据。你可以通过在测试类上定义 `$seed` 属性来实现：
+
+    <?php
+
+    namespace Tests;
+
+    use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+
+    abstract class TestCase extends BaseTestCase
+    {
+        use CreatesApplication;
+
+        /**
+         * 指示是否应在每次测试之前运行默认数据填充
+         *
+         * @var bool
+         */
+        protected $seed = true;
+    }
+
+当 `$seed` 属性为 `true` 时，测试将在每个使用 `RefreshDatabase` trait 的测试之前运行 `Database\Seeders\DatabaseSeeder` 类。但是，你可以通过在测试类上定义 `$seeder` 属性来指定应该执行的特定数据填充：
+
+    use Database\Seeders\OrderStatusSeeder;
+
+    /**
+     * 每次测试前运行指定数据填充     *
+     * @var string
+     */
+    protected $seeder = OrderStatusSeeder::class;
 
 <a name="available-assertions"></a>
-## 可用的断言方法
+## 可用的断言
 
-Laravel 为你的 [PHPUnit](https://phpunit.de/) 测试提供了一些数据库断言方法：
+Laravel 为你的 [PHPUnit](https://phpunit.de/) 功能测试提供了几个数据库断言。我们将在下面逐个讨论。
 
-方法名  | 描述
-------------- | -------------
-`$this->assertDatabaseHas($table, array $data);`  |  断言数据库里含有指定数据。
-`$this->assertDatabaseMissing($table, array $data);`  |  断言表里没有指定数据。
-`$this->assertSoftDeleted($table, array $data);`  |  断言指定记录已经被软删除。
+<a name="assert-database-count"></a>
+#### assertDatabaseCount
 
-## 译者署名
+断言数据库中的表包含给定数量的记录：
 
-| 用户名 | 头像 | 职能 | 签名 |
-|---|---|---|---|
-| [@limxx](https://github.com/limxx)  | <img class="avatar-66 rm-style" src="https://avatars0.githubusercontent.com/u/16585030?v=4&s=400">  |  翻译  | Winter is coming. |
+    $this->assertDatabaseCount('users', 5);
 
+<a name="assert-database-has"></a>
+#### assertDatabaseHas
 
---- 
+断言数据库中的表包含给定键/值查询约束的记录：
 
-> {note} 欢迎任何形式的转载，但请务必注明出处，尊重他人劳动共创开源社区。
-> 
-> 转载请注明：本文档由 Laravel China 社区 [laravel-china.org](https://laravel-china.org) 组织翻译，详见 [翻译召集帖](https://laravel-china.org/topics/5756/laravel-55-document-translation-call-come-and-join-the-translation)。
-> 
-> 文档永久地址： https://d.laravel-china.org
+    $this->assertDatabaseHas('users', [
+        'email' => 'sally@example.com',
+    ]);
+
+<a name="assert-database-missing"></a>
+#### assertDatabaseMissing
+
+断言数据库中的表不包含给定键/值查询约束的记录：
+
+    $this->assertDatabaseMissing('users', [
+        'email' => 'sally@example.com',
+    ]);
+
+<a name="assert-deleted"></a>
+#### assertSoftDeleted
+
+ `assertSoftDeleted` 断言给定的 Eloquent 模型已被「软删除」：
+
+    $this->assertSoftDeleted($user);
+
+<a name="assert-model-exists"></a>
+#### assertModelExists
+
+断言给定模型存在于数据库中：
+
+    use App\Models\User;
+
+    $user = User::factory()->create();
+
+    $this->assertModelExists($user);
+
+<a name="assert-model-missing"></a>
+#### assertModelMissing
+
+断言数据库中不存在给定模型：
+
+    use App\Models\User;
+
+    $user = User::factory()->create();
+
+    $user->delete();
+
+    $this->assertModelMissing($user);
