@@ -50,6 +50,7 @@
     - [事件系统](/docs/events)
     - [文件存储](/docs/filesystem)
     - [辅助函数](/docs/helpers)
+    - [HTTP 客户端](/docs/http-client)
     - [邮件发送](/docs/mail)
     - [消息通知](/docs/notifications)
     - [扩展包开发](/docs/packages)

@@ -1,88 +1,128 @@
-# Laravel 下的伪造跨站请求保护 CSRF
+# CSRF 保护
 
 - [简介](#csrf-introduction)
-- [CSRF 白名单](#csrf-excluding-uris)
+- [阻止CSRF请求](#preventing-csrf-requests)
+    - [排除URLS](#csrf-excluding-uris)
 - [X-CSRF-Token](#csrf-x-csrf-token)
 - [X-XSRF-Token](#csrf-x-xsrf-token)
 
 <a name="csrf-introduction"></a>
 ## 简介
 
-Laravel 可以轻松地保护应用程序免受 [跨站请求伪造](https://en.wikipedia.org/wiki/Cross-site_request_forgery) (CSRF) 的攻击。跨站请求伪造是一种恶意的攻击，它凭借已通过身份验证的用户身份来运行未经过授权的命令。
+跨站点请求伪造是一种恶意利用，利用这种手段，代表经过身份验证的用户执行未经授权的命令。值得庆幸的是，Laravel 可以轻松保护您的应用程序免受[跨站点请求伪造](https://en.wikipedia.org/wiki/Cross-site_request_forgery)（CSRF）攻击。
 
-Laravel 会自动为每个活跃用户的会话生成一个 CSRF「令牌」。该令牌用于验证经过身份验证的用户是否是向应用程序发出请求的用户。
+<a name="csrf-explanation"></a>
+#### 漏洞的解释
 
-任何情况下当你在应用程序中定义 HTML 表单时，都应该在表单中包含一个隐藏的 CSRF 令牌字段，以便 CSRF 保护中间件可以验证该请求。可以使用辅助函数 `csrf_field` 来生成令牌字段：
+如果您不熟悉跨站点请求伪造，我们讨论一个利用此漏洞的示例。假设您的应用程序有一个  `/user/email` 路由，它接受 `POST` 请求来更改经过身份验证用户的电子邮件地址。最有可能的情况是，此路由希望 `email` 输入字段包含用户希望开始使用的电子邮件地址。
 
-    <form method="POST" action="/profile">
-        {{ csrf_field() }}
-        ...
-    </form>
+没有 CSRF 保护，恶意网站可能会创建一个HTML表单，指向您的应用程序 `/user/email` 路由，并提交恶意用户自己的电子邮件地址：
 
-包含在 `web` 中间件组里的 `VerifyCsrfToken` [中间件](/docs/{{version}}/middleware)会自动验证请求里的令牌是否与存储在会话中令牌匹配。
+```blade
+<form action="https://your-application.com/user/email" method="POST">
+    <input type="email" value="malicious-email@example.com">
+</form>
 
-#### CSRF 令牌 & JavaScript
+<script>
+    document.forms[0].submit();
+</script>
+```
 
-构建由 Javascript 驱动的应用时，可以很方便地让 Javascript HTTP 函数库在发起每一个请求时自动附上 CSRF 令牌。默认情况下， `resources/assets/js/bootstrap.js` 文件会用 Axios HTTP 函数库注册的 `csrf-token` meta 标签中的值。如果你不使用这个函数库，你需要手动为你的应用配置此行为。
+如果恶意网站在页面加载时自动提交了表单，则恶意用户只需要诱使您的应用程序的一个毫无戒心的用户访问他们的网站，他们的电子邮件地址就会在您的应用程序中更改。
+
+为了防止这种漏洞，我们需要检查每一个传入的 `POST`，`PUT`，`PATCH` 或 `DELETE` 请求以获取恶意应用程序无法访问的秘密会话值。
+
+<a name="阻止CSRF请求"></a>
+## 阻止 CSRF 请求
+
+Laravel 为应用程序管理的每个活动 [用户会话](/docs/laravel/9.x/session) 自动生成 CSRF 「令牌」。此令牌用于验证经过身份验证的用户是实际向应用程序发出请求的人。由于此令牌存储在用户的会话中，并且每次重新生成会话时都会更改，因此恶意应用程序将无法访问它。
+
+当前会话的 CSRF 令牌可以通过请求的会话或通过 `csrf_token` 辅助函数进行访问：
+
+    use Illuminate\Http\Request;
+
+    Route::get('/token', function (Request $request) {
+        $token = $request->session()->token();
+
+        $token = csrf_token();
+
+        // ...
+    });
+
+每当您在应用程序中定义 HTML 表单时，都应在表单中包含一个隐藏的 CSRF `_token` 字段，以便 CSRF 保护中间件可以验证请求。为了方便起见，您可以使用 `@csrf` Blade 指令生成隐藏的令牌输入字段：
+
+```blade
+<form method="POST" action="/profile">
+    @csrf
+
+    <!-- 等同于... -->
+    <input type="hidden" name="_token" value="{{ csrf_token() }}" />
+</form>
+```
+
+`App\Http\Middleware\VerifyCsrfToken` [中间件](/docs/laravel/9.x/middleware)，其包括在在 `web` 由默认中间件基，将自动验证在请求输入的令牌匹配令牌存储在会话。当这两个令牌匹配时，我们知道经过身份验证的用户就是发起请求的用户。
+
+<a name="csrf-tokens-and-spas"></a>
+### CSRF Tokens & SPAs
+
+如果您正在构建一个将 Laravel 用作 API 后端的 SPA，您应该查阅 [Laravel Sanctum 文档](/docs/laravel/9.x/sanctum)，以获取有关使用 API 进行身份验证和防范 CSRF 漏洞的信息。
+
 
 <a name="csrf-excluding-uris"></a>
-## CSRF 白名单
+### 从 CSRF 保护中排除 URI
 
-有时候你可能希望设置一组并不需要 CSRF 保护的 URI。例如，如果你正在使用 [Stripe](https://stripe.com) 处理付款并使用了他们的 webhook 系统，你会需要从 CSRF 的保护中排除 Stripe Webhook 处理程序路由，因为 Stripe 并不会给你的路由发送 CSRF 令牌。
+有时你可能希望从 CSRF 保护中排除一组 URI。例如，如果您使用 [Stripe](https://stripe.com) 处理付款并使用他们的 webhook 系统，则需要将你的 Stripe webhook 处理程序路由从 CSRF 保护中排除，因为 Stripe 不会知道要向您的路由发送什么 CSRF 令牌。
 
-你可以把这类路由放到 `routes/web.php` 外，因为 `RouteServiceProvider` 的 `web` 中间件适用于该文件中的所有路由。不过，你也可以通过将这类 URI 添加到 `VerifyCsrfToken` 中间件中的 `$except` 属性来排除对这类路由的 CSRF 保护：
+通常，你应该将这些类型的路由放在 `App\Providers\RouteServiceProvider` 应用于 routes/web.php 文件中的所有路由的 `web` 中间件组之外。但是，你现在也可以通过将路由的 URI 添加到 `VerifyCsrfToken` 中间件的 `$except` 属性来排除路由：
 
     <?php
 
     namespace App\Http\Middleware;
 
-    use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as BaseVerifier;
+    use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
 
-    class VerifyCsrfToken extends BaseVerifier
+    class VerifyCsrfToken extends Middleware
     {
         /**
-         * 这些 URI 将免受 CSRF 验证
+         * 从 CSRF 验证中排除的 URI。
          *
          * @var array
          */
         protected $except = [
             'stripe/*',
+            'http://example.com/foo/bar',
+            'http://example.com/foo/*',
         ];
     }
+
+> 技巧：为方便起见，[运行测试](/docs/laravel/9.x/testing)时自动禁用所有路由的 CSRF 中间件。
 
 <a name="csrf-x-csrf-token"></a>
 ## X-CSRF-TOKEN
 
-除了检查 POST 参数中的 CSRF 令牌外，`VerifyCsrfToken` 中间件还会检查 `X-CSRF-TOKEN` 请求头。你可以将令牌保存在 HTML `meta` 标签中：
+除了检查 CSRF 令牌作为 POST 参数外，`App\Http\Middleware\VerifyCsrfToken` 中间件还将检查 `X-CSRF-TOKEN` 请求标头。 例如，你可以将令牌存储在 HTML 的 `meta` 标签中：
 
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+```blade
+<meta name="csrf-token" content="{{ csrf_token() }}">
+```
 
-然后你就可以使用类似 jQuery 的库自动将令牌添加到所有请求的头信息中。这可以为基于 AJAX 的应用提供简单、方便的 CSRF 保护：
+然后，您可以指示 jQuery 之类的库自动将令牌添加到所有请求标头。 这为使用传统 JavaScript 技术的基于 AJAX 的应用程序提供了简单、方便的 CSRF 保护：
 
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
-    });
+```js
+$.ajaxSetup({
+    headers: {
+        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    }
+});
+```
 
-> {tip} 默认情况下， `resources/assets/js/bootstrap.js` 文件会用 Axios HTTP 函数库注册 `csrf-token` meta 标签中的值。如果你不使用这个函数库，则需要为你的应用手动配置此行为。
+
 
 <a name="csrf-x-xsrf-token"></a>
 ## X-XSRF-TOKEN
 
-Laravel 将当前的 CSRF 令牌存储在由框架生成的每个响应中包含的一个 `XSRF-TOKEN` cookie 中。为方便起见，你可以使用 cookie 值来设置 X-XSRF-TOKEN 请求头，而一些 JavaScript 框架和库（如 Angular 和 Axios）会自动将这个值添加到 `X-XSRF-TOKEN` 头中。
+Laravel 将当前的 CSRF 令牌存储在一个加密的 `XSRF-TOKEN` cookie 中，该 cookie 包含在框架生成的每个响应中。您可以使用 cookie 值来设置 `X-XSRF-TOKEN` 请求标头。
 
-## 译者署名
-| 用户名 | 头像 | 职能 | 签名 |
-|---|---|---|---|
-| [@王凯波](http://weibo.com/wangkaibo)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/1924_1487053084.jpeg?imageView2/1/w/100/h/100">  |  翻译  | 面向工资编程  [@wangkaibo](https://github.com/wangkaibo/)  |
-| [@Lichmaker](https://learnku.com/users/16370)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/16370_1499995124.jpg?imageView2/1/w/100/h/100">  |  翻译 | Happy Coding! :) 我的微博：[神经考拉君](http://weibo.com/1779555595/) |
-| [@JokerLinly](https://learnku.com/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  |  Review  | Stay Hungry. Stay Foolish. |
+这个 cookie 主要是为了方便开发人员发送的，因为一些 JavaScript 框架和库，如 Angular 和 Axios，会自动将其值放在同源请求的 `X-XSRF-TOKEN` 标头中。
 
-
----
-
->
-> 转载请注明：本文档由 LearnKu 技术论坛 [learnku.com](https://learnku.com) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
->
-> 文档原地址： https://learnku.com/docs/laravel/9.x
+> 技巧：默认情况下，`resources/js/bootstrap.js` 文件包含 Axios HTTP 库，它会自动为您发送 `X-XSRF-TOKEN` 标头。

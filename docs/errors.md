@@ -1,164 +1,88 @@
-# Laravel 的错误和日志记录
+# 错误处理
 
-- [简介](#introduction)
+- [介绍](#introduction)
 - [配置](#configuration)
-    - [错误的详细信息](#error-detail)
-    - [日志存储](#log-storage)
-    - [日志严重程度级别](#log-severity-levels)
-    - [自定义 Monolog 配置](#custom-monolog-configuration)
 - [异常处理](#the-exception-handler)
-    - [Report 方法](#report-method)
-    - [Render 方法](#render-method)
-    - [自定义异常的 report & render 方法](#renderable-exceptions)
+    - [异常报告](#reporting-exceptions)
+    - [忽略指定类型异常](#ignoring-exceptions-by-type)
+    - [渲染异常](#rendering-exceptions)
+    - [Reportable & Renderable 异常](#renderable-exceptions)
 - [HTTP 异常](#http-exceptions)
     - [自定义 HTTP 错误页面](#custom-http-error-pages)
-- [日志](#logging)
 
 <a name="introduction"></a>
-## 简介
+## 介绍
 
-Laravel 默认自带错误和异常处理机制。应用程序触发的所有异常都被 `App\Exceptions\Handler` 类记录下来，然后渲染给用户。 我们将在后续文档中深入介绍此类。
-
-Laravel 使用 [Monolog](https://github.com/Seldaek/monolog) 库为各种强大的日志处理程序提供支持。Laravel 配置了多种日志处理程序，方便你在单个日志文件、多个日志文件或将错误信息写入系统日志之间进行选择。
+当你开始一个新的 `Laravel` 项目时，它已经为您配置了错误和异常处理。 `App\Exceptions\Handler` 类用于记录应用程序触发的所有异常，然后将其呈现回用户。我们将在本文中深入讨论这个类。
 
 <a name="configuration"></a>
 ## 配置
 
-<a name="error-detail"></a>
-### 错误的详细信息
+你的 `config/app.php` 配置文件中的 `debug` 选项决定了对于一个错误实际上将显示多少信息给用户。默认情况下，该选项的设置将遵照存储在 `.env` 文件中的 `APP_DEBUG` 环境变量的值。
 
-`config/app.php` 配置文件的 `debug` 选项决定了是否向用户显示错误信息。默认情况下，此选项设置为获取存储在 `.env` 文件中的 `APP_DEBUG` 环境变量的值。
-
- 对于本地开发，应该将 `APP_DEBUG` 环境变量设置为 `true` 。而在生产环境中，此值应始终保持 `false` 。如果你在生产中将该值设置为 `true` ，则有可能会将敏感的配置信息暴露给应用程序的最终用户。
-
-<a name="log-storage"></a>
-### 日志存储
-
-Laravel 支持 `single` 、`daily` 、 `syslog` 和 `errorlog` 四种日志写入模式。通过修改 `config/app.php` 配置文件中的 `log` 选项来配置 Laravel 使用的存储机制。如果你希望每天产生日志都存放在不同的文件中，则应将 `app` 配置文件中的 `log` 值设置为 `daily`：
-
-    'log' => 'daily'
-
-#### 最大日志文件数
-
-在使用 `daily` 日志模式时，Laravel 默认只保留五天份的日志文件。如果要调整保留文件的数量，就在 `app` 配置文件中添加一个 `log_max_files` 配置项：
-
-    'log_max_files' => 30
-
-<a name="log-severity-levels"></a>
-### 日志严重程度级别
-
-使用 Monolog 时，日志消息可能具有不同程度的严重级别。默认情况下，Laravel 将存储所有级别的日志。你也可以在生产环境中通过将 `log_level` 选项添加到 `app.php` 配置文件中来配置应当记录的严重程度最低的日志级别。
-
-配置之后，Laravel 就只会记录大于或等于指定严重级别的所有级别的错误。例如，默认的 `log_level` 被设置为 `error`，那么 Laravel 只会记录 **error**、**critical**、**alert** 和 **emergency** 级别的日志信息：
-
-    'log_level' => env('APP_LOG_LEVEL', 'error'),
-
-> {tip}  Monolog 识别以下严重程度的级别，从低到高为: `debug`、 `info`、`notice`、 `warning`、`error`、`critical`、`alert`、`emergency`。
-
-<a name="custom-monolog-configuration"></a>
-### 自定义 Monolog 配置
-
-你可以使用 `configureMonologUsing` 方法来配置应用程序对 Monolog 的完全控制。在 `$app` 变量返回之前，在 `bootstrap/app.php` 文件中调用此方法：
-
-    $app->configureMonologUsing(function ($monolog) {
-        $monolog->pushHandler(...);
-    });
-
-    return $app;
-
-#### 自定义渠道名称
-
-默认情况下，Monolog 用与当前环境匹配的名称进行实例化，如 `production` 或 `local`。要更改此值，可将 `log_channel` 选项添加到 `app.php` 配置文件中：
-
-```
-'log_channel' => env('APP_LOG_CHANNEL', 'my-app-name'),
-```
+对于本地开发，你应该将 `APP_DEBUG` 环境变量的值设置为 `true`。**在生产环境中，该值应始终为 `false`。如果在生产中将该值设置为 `true`，则可能会将敏感配置值暴露给应用程序的终端用户。**
 
 <a name="the-exception-handler"></a>
-
 ## 异常处理
 
-<a name="report-method"></a>
-### Report 方法
+<a name="reporting-exceptions"></a>
+### 异常报告
 
-所有异常都由 `App\Exceptions\Handler` 类处理。 这个类包含两个方法：`report` 和 `render`。`report` 方法用于记录异常或将其发送到外部服务，如 [Bugsnag](https://bugsnag.com) 或 [Sentry](https://github.com/getsentry/sentry-laravel)。默认情况下，`report` 方法只是简单地将异常传递给记录异常的基类。你可以根据需要来记录异常。
+所有异常都是由 `App\Exceptions\Handler` 类处理。此类包含一个 `register` 方法，可以在其中注册自定义异常报告程序和渲染器回调。我们将详细研究每个概念。异常报告用于记录异常或将其发送到如 [Flare](https://flareapp.io)、[Bugsnag](https://bugsnag.com) 或 [Sentry](https://github.com/getsentry/sentry-laravel) 等外部服务。默认情况下，将根据你的 [日志](/docs/laravel/9.x/logging) 配置来记录异常。不过，你可以用任何自己喜欢的方式来记录异常。
 
-例如，如果你需要以不同的方式报告不同类型的异常，你可以使用 PHP 的比较运算符 `instanceof`：
+
+
+例如，如果您需要以不同的方式报告不同类型的异常，您可以使用 `reportable` 方法注册一个闭包，当需要报告给定的异常的时候便会执行它。 Laravel 将通过检查闭包的类型提示来判断闭包报告的异常类型：
+
+    use App\Exceptions\InvalidOrderException;
 
     /**
-     * 报告或记录一个异常
+     * 为应用程序注册异常处理回调
      *
-     * 这是个给 Bugsnag 或 Sentry 发送异常的好地方
-     *
-     * @param  \Exception  $exception
      * @return void
      */
-    public function report(Exception $exception)
+    public function register()
     {
-        if ($exception instanceof CustomException) {
+        $this->reportable(function (InvalidOrderException $e) {
             //
-        }
-
-        return parent::report($exception);
+        });
     }
 
-#### 辅助函数 `report`
+当您使用 reportable 方法注册一个自定义异常报告回调时， Laravel 依然会使用默认的日志配置记录下应用异常。 如果您想要在默认的日志堆栈中停止这个行为，您可以在定义报告回调时使用 stop 方法：
 
-某些时候你可能想要报告一个异常，但又想继续处理当前的请求。辅助函数 `report` 允许你使用异常处理程序的 `report` 方法快速报告一个异常而不抛出一个错误页面：
+    $this->reportable(function (InvalidOrderException $e) {
+        //
+    })->stop();
 
-    public function isValid($value)
-    {
-        try {
-            // 校验值...
-        } catch (Exception $e) {
-            report($e);
+    $this->reportable(function (InvalidOrderException $e) {
+        return false;
+    });
 
-            return false;
-        }
-    }
+> 技巧：要为给定的异常自定义异常报告，您可以使用 [可报告异常](/docs/laravel/9.x/errors#renderable-exceptions)。
 
-#### 按类型忽略异常
+<a name="global-log-context"></a>
+#### 全局日志上下文
 
-异常处理程序的 `$dontReport` 属性包含不会被记录的异常类型数组。例如，404错误导致的异常以及其他类型的错误不会写入日志文件。你可以根据需要向此数组添加其他异常类型：
+在可用的情况下， Laravel 会自动将当前用户的编号作为数据添加到每一条异常日志信息中。您可以通过重写 App\Exceptions\Handler 类中的 context 方法来定义您自己的全局上下文数据（环境变量）。此后，每一条异常日志信息都将包含这个信息：
 
     /**
-     * 不应报告的异常类型列表。
+     * 获取默认日志的上下文变量
      *
-     * @var array
+     * @return array
      */
-    protected $dontReport = [
-        \Illuminate\Auth\AuthenticationException::class,
-        \Illuminate\Auth\Access\AuthorizationException::class,
-        \Symfony\Component\HttpKernel\Exception\HttpException::class,
-        \Illuminate\Database\Eloquent\ModelNotFoundException::class,
-        \Illuminate\Validation\ValidationException::class,
-    ];
-
-<a name="render-method"></a>
-### Render 方法
-
-`render` 方法负责将给定的异常转换成发送给浏览器的 HTTP 响应。默认情况下，异常会传递为你生成响应的基类。你还可以根据需要检查异常类型或返回自定义的响应：
-
-    /**
-     * 渲染异常到 HTTP 响应中.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Exception  $exception
-     * @return \Illuminate\Http\Response
-     */
-    public function render($request, Exception $exception)
+    protected function context()
     {
-        if ($exception instanceof CustomException) {
-            return response()->view('errors.custom', [], 500);
-        }
-
-        return parent::render($request, $exception);
+        return array_merge(parent::context(), [
+            'foo' => 'bar',
+        ]);
     }
 
-<a name="renderable-exceptions"></a>
-### 自定义异常的 report & render 方法
+<a name="exception-log-context"></a>
 
-你并不一定要在异常处理程序中的 `report` 和 `render` 方法中处理不同类型的异常，可以直接在自定义的异常处理程序中定义 `report` 和 `render` 方法。如果这些方法存的在话，框架会自动调用他们：
+
+#### 异常日志上下文
+
+虽然为每条日志消息添加上下文可能很有用，但有时特定异常可能具有您希望包含在日志中的独特上下文。通过在应用程序的自定义异常上定义 `context` 方法，您可以指定应添加到异常日志条目中的与该异常相关的任何数据：
 
     <?php
 
@@ -166,12 +90,113 @@ Laravel 支持 `single` 、`daily` 、 `syslog` 和 `errorlog` 四种日志写�
 
     use Exception;
 
-    class RenderException extends Exception
+    class InvalidOrderException extends Exception
+    {
+        // ...
+
+        /**
+         * Get the exception's context information.
+         *
+         * @return array
+         */
+        public function context()
+        {
+            return ['order_id' => $this->orderId];
+        }
+    }
+
+<a name="the-report-helper"></a>
+#### `report` 助手函数
+
+有时您可能需要报告异常但继续处理当前请求。 `report` 辅助函数允许您通过异常处理程序快速报告异常，而无需向用户呈现错误页面：
+
+    public function isValid($value)
+    {
+        try {
+            // 验证...
+        } catch (Throwable $e) {
+            report($e);
+
+            return false;
+        }
+    }
+
+<a name="ignoring-exceptions-by-type"></a>
+### 按类型忽略异常
+
+在构建应用时，会有一些类型的异常您只想忽略并且永远不会报告。应用的异常处理程序包含一个 `$dontReport` 属性，该属性被初始化为一个空数组。您添加到此属性的任何类都不会被报告；但是，它们可能仍然具有自定义呈现逻辑：
+
+    use App\Exceptions\InvalidOrderException;
+
+    /**
+     * 不应上报的异常类型列表。
+     *
+     * @var array
+     */
+    protected $dontReport = [
+        InvalidOrderException::class,
+    ];
+
+> 提示：在幕后，Laravel 已经为你忽略了某些类型的错误，例如由 404 HTTP「未找到」错误导致的异常或由无效 CSRF 令牌生成的 419 HTTP 响应。
+
+<a name="rendering-exceptions"></a>
+### 渲染异常
+
+默认情况下，Laravel 异常处理器会为你把异常转换为 HTTP 响应。然而，你可以自由地为特定类型的异常注册一个自定义的渲染闭包来实现。
+
+传递给  `renderable` 方法的闭包函数应返回一个 `Illuminate\Http\Response` 的实例，它可以通过  `response` 助手函数生成。 Laravel 将会根据闭包的类型提示来推断闭包渲染的异常类型：
+
+    use App\Exceptions\InvalidOrderException;
+
+    /**
+     * 注册异常处理回调
+     *
+     * @return void
+     */
+    public function register()
+    {
+        $this->renderable(function (InvalidOrderException $e, $request) {
+            return response()->view('errors.invalid-order', [], 500);
+        });
+    }
+
+你也可以使用 `renderable` 方法来覆盖 Laravel 或 Symfony 内置异常的渲染行为，例如 `NotFoundHttpException`。如果 `renderable` 方法的闭包没有返回值，将使用 Laravel 的默认异常渲染：
+
+    use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+    /**
+     * 为应用程序注册异常处理回调。
+     *
+     * @return void
+     */
+    public function register()
+    {
+        $this->renderable(function (NotFoundHttpException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => 'Record not found.'
+                ], 404);
+            }
+        });
+    }
+
+<a name="renderable-exceptions"></a>
+### Reportable & Renderable 异常
+
+除了在异常控制器的 `register`方法中检查异常类型外，你可以直接地在自定义异常里定义 `report` 和 `render` 。当这些方法存在时，它们将被框架自动调用：
+
+    <?php
+
+    namespace App\Exceptions;
+
+    use Exception;
+
+    class InvalidOrderException extends Exception
     {
         /**
-         * 报告异常
+         * 报告异常。
          *
-         * @return void
+         * @return bool|null
          */
         public function report()
         {
@@ -179,10 +204,10 @@ Laravel 支持 `single` 、`daily` 、 `syslog` 和 `errorlog` 四种日志写�
         }
 
         /**
-         * 将异常渲染到 HTTP 响应中。
+         *渲染异常为 HTTP 响应。
          *
-         * @param  \Illuminate\Http\Request
-         * @return void
+         * @param  \Illuminate\Http\Request  $request
+         * @return \Illuminate\Http\Response
          */
         public function render($request)
         {
@@ -190,85 +215,62 @@ Laravel 支持 `single` 、`daily` 、 `syslog` 和 `errorlog` 四种日志写�
         }
     }
 
+
+
+如果你的异常扩展了一个已经可以渲染的异常，比如内置的 Laravel 或 Symfony 异常，你可以从异常的 `render` 方法返回 `false` 来渲染异常的默认 HTTP 响应：
+
+    /**
+     * 将异常渲染为 HTTP 响应。
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function render($request)
+    {
+        // 判断异常是否需要自定义报告...
+
+        return false;
+    }
+
+如果你的异常中包含了仅在满足特定条件才报告的自定义报告逻辑，你可能需要指示 Laravel 使用默认的异常处理配置报告异常。你可以在异常的 `report` 方法中返回 `false` 实现这个：
+
+    /**
+     * 报告异常。
+     *
+     * @return bool|null
+     */
+    public function report()
+    {
+        // 判断异常是否需要自定义报告...
+
+        return false;
+    }
+
+> 技巧：你可以通过类型提示输入 `report` 方法所需的依赖项，Laravel的 [服务容器](/docs/laravel/9.x/container) 会自动把它们注入到此方法中。
+
 <a name="http-exceptions"></a>
 ## HTTP 异常
 
-一些异常描述了来自服务器的 HTTP 错误代码。例如，可能是错误代码 404 的「找不到页面」、401 的「未授权错误」甚至可能是由开发者造成的 500。你可以使用辅助函数 `abort` 在应用程序中的任何地方生成这样的响应：
+某些异常描述了服务器的 HTTP 错误代码。例如，可能是 「 页面未找到 」 错误 （404），「 未经授权的错误 」（401）或者甚至是开发者造成的 500 错误。要在应用的任意地方生成此类响应，你可以使用 `abort` 辅助函数：
 
     abort(404);
 
-辅助函数 `abort` 会创建一个由异常处理程序渲染的异常。此外，你还可以提供响应文本：
-
-    abort(403, 'Unauthorized action.');
-
 <a name="custom-http-error-pages"></a>
-### 自定义 HTTP 错误页面
+### 自定义 HTTP 错误页
 
-Laravel 可以轻松地显示各种 HTTP 状态代码的自定义错误页面。例如，如果你要自定义 404 HTTP 状态代码的错误页面，就创建一个 `resources/views/errors/404.blade.php` 。此文件将会用于渲染你应用中产生的所有 404 错误。此目录中的视图文件的命名应该与它们对应的 HTTP 状态代码匹配。由 `abort` 函数引发的 `HttpException` 实例将作为 `$exception` 变量传递给视图。
+Laravel 创建了可以轻松显示各种 HTTP 状态码的自定义错误页面。例如，如果你想自定义 404 HTTP 状态码页面，只需创建一个 `resources/views/errors/404.blade.php` 文件。它会用来处理所有应用程序产生的 404 错误。视图目录下所有文件命名都应和它们所响应的 HTTP 状态码一一对应。`abort` 方法会调用 `Symfony\Component\HttpKernel\Exception\HttpException` 的实例，它将被作为 `$exception` 变量传递给视图：
 
     <h2>{{ $exception->getMessage() }}</h2>
 
-<a name="logging"></a>
-## 日志
 
-Laravel 在强大的 [Monolog](https://github.com/seldaek/monolog) 库上提供了一个简单的抽象层。默认情况下，Laravel 的日志文件的存储目录被配置为 `storage/logs` 。你可以使用 `Log` [facade](/docs/{{version}}/facades) 将信息写入日志：
 
-    <?php
+你可以使用 Artisan 命令 `vendor:publish` 发布模板，然后根据自己的喜好进行自定义：
 
-    namespace App\Http\Controllers;
+```shell
+php artisan vendor:publish --tag=laravel-errors
+```
 
-    use App\User;
-    use Illuminate\Support\Facades\Log;
-    use App\Http\Controllers\Controller;
+<a name="fallback-http-error-pages"></a>
+#### 回退 HTTP 错误页面
 
-    class UserController extends Controller
-    {
-        /**
-         * 显示给定用户的配置。
-         *
-         * @param  int  $id
-         * @return Response
-         */
-        public function showProfile($id)
-        {
-            Log::info('Showing user profile for user: '.$id);
-
-            return view('user.profile', ['user' => User::findOrFail($id)]);
-        }
-    }
-
-该日志记录器提供 [RFC 5424](https://tools.ietf.org/html/rfc5424) 中定义的八种日志级别：**emergency**、**alert**、**critical**、**error**、**warning**、**notice**、**info**  和 **debug**。
-
-    Log::emergency($message);
-    Log::alert($message);
-    Log::critical($message);
-    Log::error($message);
-    Log::warning($message);
-    Log::notice($message);
-    Log::info($message);
-    Log::debug($message);
-
-#### 上下文信息
-
-上下文数据也可以用数组的形式传递给日志方法。此上下文数据将被格式化并与日志消息一起显示：
-
-    Log::info('User failed to login.', ['id' => $user->id]);
-
-#### 访问底层的 Monolog 实例
-
-Monolog 还提供了各种可用于记录的处理程序。如果需要，你可以访问 Laravel 使用的底层的 Monolog 实例：
-
-    $monolog = Log::getMonolog();
-
-## 译者署名
-| 用户名 | 头像 | 职能 | 签名 |
-|---|---|---|---|
-|[@ChrisonWang](https://github.com/ChrisonWang)  | <img class="avatar-66 rm-style" src="https://avatars0.githubusercontent.com/u/16531947?v=4&s=80">  |  翻译  | [@王欣](https://www.linkedin.com/in/ChrisonWang/) at LinkedIn|
-| [@JokerLinly](https://learnku.com/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  | Review | Stay Hungry. Stay Foolish. |
-
----
-
->
-> 转载请注明：本文档由 LearnKu 技术论坛 [learnku.com](https://learnku.com) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
->
-> 文档原地址： https://learnku.com/docs/laravel/9.x
+你还可以为给定的一系列 HTTP 状态代码定义「回退」错误页面。如果发生的特定 HTTP 状态代码没有对应的页面，则将呈现此页面。为此，请在应用程序的 `resources/views/errors` 目录中定义一个 `4xx.blade.php` 模板和一个 `5xx.blade.php` 模板。

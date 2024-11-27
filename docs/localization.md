@@ -1,53 +1,69 @@
-# Laravel 的本地化功能
+# 本地化
 
 - [简介](#introduction)
+    - [配置语言环境](#configuring-the-locale)
 - [定义翻译字符串](#defining-translation-strings)
     - [使用短键](#using-short-keys)
     - [使用翻译字符串作为键](#using-translation-strings-as-keys)
 - [检索翻译字符串](#retrieving-translation-strings)
-    - [翻译语句中的参数替换](#replacing-parameters-in-translation-strings)
-    - [复数](#pluralization)
-- [重写扩展包的语言文件](#overriding-package-language-files)
+    - [替换翻译字符串中的参数](#replacing-parameters-in-translation-strings)
+    - [复数化](#pluralization)
+- [覆盖扩展包的语言文件](#overriding-package-language-files)
 
 <a name="introduction"></a>
 ## 简介
 
-Laravel 的本地化功能为在应用程序中支持多种语言提供方便的方法来检索各种语言的字符串。语言字符串存储在 `resources/lang` 目录下的文件里。在此目录中，但凡应用支持的语言都应该有一个对应的子目录：
+Laravel 的本地化功能提供了一种方便的方法来检索各种语言的字符串，从而使你可以轻松地在应用程序中支持多种语言。
 
-    /resources
-        /lang
-            /en
-                messages.php
-            /es
-                messages.php
+Laravel 提供了两种管理翻译字符串的方法。首先，语言字符串可以存储在`lang`目录里的文件中。在此目录中，可能存在应用程序支持的每种语言的子目录。这是 Laravel 用于管理内置 Laravel 功能（例如验证错误消息）的翻译字符串的方法：
 
-所有语言文件只返回键值对数组，例如：
+    /lang
+        /en
+            messages.php
+        /es
+            messages.php
 
-    <?php
+或者，可以在 `lang` 目录中放置的 JSON 文件中定义翻译字符串。采用这种方法时，应用程序支持的每种语言在此目录中都会有一个对应的 JSON 文件。对于具有大量可翻译字符串的应用，建议使用此方法：
 
-    return [
-        'welcome' => 'Welcome to our application'
-    ];
+    /lang
+        en.json
+        es.json
 
-### 区域设置
+我们将在本文档中讨论每种管理翻译字符串的方法。
 
-应用的默认语言保存在 `config/app.php` 配置文件中。你可以根据需要修改当前设置。还可以使用 `App` Facade 的 `setLocale` 方法动态地更改当前语言：
+<a name="configuring-the-locale"></a>
+### 配置语言环境
 
-    Route::get('welcome/{locale}', function ($locale) {
+应用程序的默认语言存储在 `config/app.php` 配置文件的 `locale` 配置选项中。你可以随意修改此值以适合你的应用程序的需求。
+
+你可以使用 `App` Facade 提供的 `setLocale` 方法,在运行时通过单个 HTTP 请求修改默认语言：
+
+    use Illuminate\Support\Facades\App;
+
+    Route::get('/greeting/{locale}', function ($locale) {
+        if (! in_array($locale, ['en', 'es', 'fr'])) {
+            abort(400);
+        }
+
         App::setLocale($locale);
 
         //
     });
 
-你也可以设置 「备用语言」 ，它将会在当前语言不包含给定的翻译字符串时被使用。像默认语言一样，备用语言也可以在 `config/app.php` 配置文件设置：
+
+
+你可以配置一个 “备用语言”，当当前语言不包含给定的翻译字符串时，将使用该语言。和默认语言一样，备用语言也是在`config/app.php`配置文件中配置的。
 
     'fallback_locale' => 'en',
 
-#### 确定当前语言环境
+<a name="determining-the-current-locale"></a>
+#### 确定当前的语言环境
 
-你可以使用 `App` Facade 的 `getLocale` 及 `isLocale` 方法确定当前的区域设置或者检查语言环境是否为给定值：
+你可以使用`currentLocale`和`isLocale`方法来确定当前的`locale`或检查`locale`是否是一个给定值。
 
-    $locale = App::getLocale();
+    use Illuminate\Support\Facades\App;
+
+    $locale = App::currentLocale();
 
     if (App::isLocale('en')) {
         //
@@ -59,101 +75,117 @@ Laravel 的本地化功能为在应用程序中支持多种语言提供方便的
 <a name="using-short-keys"></a>
 ### 使用短键
 
-通常，翻译字符串存放在 `resources/lang` 目录下的文件里。在此目录中但凡应用支持的语言都应该有一个对应的子目录：
+通常，翻译字符串存储在 `lang` 目录中的文件中。在这个目录中，应用程序支持的每种语言都应该有一个子目录。这是Laravel用于管理内置 Laravel 功能（如验证错误消息）的翻译字符串的方法：
 
-    /resources
-        /lang
-            /en
-                messages.php
-            /es
-                messages.php
+    /lang
+        /en
+            messages.php
+        /es
+            messages.php
 
-所有语言文件只返回键值对数组，例如：
+所有的语言文件都会返回一个键值对数组。比如下方这个例子：
 
     <?php
 
-    // resources/lang/en/messages.php
+    // lang/en/messages.php
 
     return [
-        'welcome' => 'Welcome to our application'
+        'welcome' => 'Welcome to our application!',
     ];
+
+> 注意：对于不同地区的语言，应根据 ISO 15897 命名语言目录。例如，英式英语应使用「en_GB」而不是 「en_gb」。
 
 <a name="using-translation-strings-as-keys"></a>
 ### 使用翻译字符串作为键
 
-对于有大量翻译需求的应用， 如果每一条翻译语句都使用 「短键」 来定义，那么当你在视图中尝试去引用这些 「短键」 的时候，很容易变得混乱。因此，Laravel 也提供支持使用字符串的「默认」翻译作为关键字定义翻译字符串。
+对于具有大量可翻译字符串的应用程序，在视图中引用键时，使用「短键」定义每个字符串可能会令人困惑，并且为应用程序支持的每个翻译字符串不断发明键会很麻烦。
 
-使用翻译字符串作为键的翻译文件作为 JSON 文件存储在 `resources/lang` 目录中。例如，如果你的应用中有西班牙语翻译，你应该新建一个 `resources/lang/es.json` 文件：
+出于这个原因，Laravel 还支持使用字符串的「默认」翻译作为键来定义翻译字符串。使用翻译字符串作为键的翻译文件作为JSON文件存储在 `lang` 目录中。例如，如果你的应用程序有西班牙语翻译，你应该创建一个 `lang/es.json` 文件：
 
-    {
-        "I love programming.": "Me encanta programar."
-    }
+```json
+{
+    "I love programming.": "Me encanta programar."
+}
+```
 
-<a name="retrieving-translation-strings"></a>
+#### 键 / 文件冲突
+
+你不应该定义和其他翻译文件的文件名存在冲突的键。例如，在 `nl/action.php` 文件存在，但 `nl.json` 文件不存在时，对 `NL` 语言翻译 `__('Action')` 会导致翻译器返回 `nl/action.php` 文件的全部内容。
+
 ## 检索翻译字符串
 
-你可以使用辅助函数 `__` 从语言文件中检索，`__` 方法接受翻译字符串的文件名和键值作为其第一个参数。例如，让我们检索 `resources/lang/messages.php` 语言文件中的 `welcome` 翻译字符串：
+您可以使用 `__` 辅助函数从语言文件中检索翻译字符串。 如果您使用“短键”来定义翻译字符串，您应该使用“点”语法将包含键的文件和键本身传递给`__`函数。 例如，让我们从 `lang/en/messages.php` 语言文件中检索 `welcome` 翻译字符串：
 
     echo __('messages.welcome');
 
+如果指定的翻译字符串不存在，`__` 函数将返回翻译字符串键。 因此，使用上面的示例，如果翻译字符串不存在，`__` 函数将返回 `messages.welcome`。
+
+  如果您使用 [默认翻译字符串作为翻译键](#using-translation-strings-as-keys)，则应将字符串的默认翻译传递给 `__` 函数；
+
     echo __('I love programming.');
 
-如果使用 [Blade 模板引擎](/docs/{{version}}/blade)，可以在视图文件中使用 `{{ }}` 语法或者使用 `@lang` 指令来打印翻译字符串：
+同样，如果翻译字符串不存在，`__` 函数将返回给定的翻译字符串键。
+
+
+
+如果您使用的是 [Blade 模板引擎](/docs/laravel/9.x/blade)，则可以使用 `{{ }}` 语法来显示翻译字符串：
 
     {{ __('messages.welcome') }}
 
-    @lang('messages.welcome')
-
-如果指定的翻译字符串不存在，`__` 方法则会简单地返回指定的翻译字符串键名。所以，如果上述示例中的翻译字符串键不存在，那么 `__` 方法则会返回 `messages.welcome` 。
-
 <a name="replacing-parameters-in-translation-strings"></a>
-### 翻译语句中的参数替换
+### 替换翻译字符串中的参数
 
-如果需要也可以在翻译字符串中定义占位符。所有的占位符都有一个前缀 `:`。例如，你可以使用持有人名称定义欢迎消息：
+如果愿意，可以在翻译字符串中定义占位符。所有占位符的前缀都是 `:`。例如，可以使用占位符名称定义欢迎消息：
 
     'welcome' => 'Welcome, :name',
 
-你可以在 `__` 方法中传递一个数组作为第二个参数，它会将数组的值替换到翻译字符串的占位符中：
+在要检索翻译字符串时替换占位符，可以将替换数组作为第二个参数传递给 `__` 函数：
 
     echo __('messages.welcome', ['name' => 'dayle']);
 
-如果你的占位符中包含了首字母大写或者全体大写，翻译过来的内容也会做相应的处理：
+如果占位符包含所有大写字母，或仅首字母大写，则转换后的值将相应地转换成大写：
 
     'welcome' => 'Welcome, :NAME', // Welcome, DAYLE
     'goodbye' => 'Goodbye, :Name', // Goodbye, Dayle
 
-
 <a name="pluralization"></a>
-### 复数
+### 复数化
 
-复数是个复杂的问题，不同语言对于复数有不同的规则。使用管道符 `|` ，可以区分字符串的单复数形式：
+因为不同的语言有着各种复杂的复数化规则,所以复数化是个复杂的问题;不过Laravel 可以根据你定义的复数化规则帮助你翻译字符串。使用 `|` 字符，可以区分字符串的单数形式和复数形式：
 
     'apples' => 'There is one apple|There are many apples',
 
-你甚至可以创建更复杂的复数规则，为多个数字范围指定翻译字符串：
+当然，使用 [翻译字符串作为键](#using-translation-strings-as-keys) 时也支持复数化：
+
+```json
+{
+    "There is one apple|There are many apples": "Hay una manzana|Hay muchas manzanas"
+}
+```
+
+你甚至可以创建更复杂的复数化规则，为多个值范围指定转换字符串：
 
     'apples' => '{0} There are none|[1,19] There are some|[20,*] There are many',
 
-在定义具有复数选项的翻译字符串之后，你可以使用 `trans_choice` 方法来检索给定「数量」的内容。在这个例子中，设置「总数」为 10 ，符合数量范围 1 至 19，所以会得到 `There are some` 这条复数语句：
+定义具有复数选项的翻译字符串后，可以使用 `trans_choice`  函数检索给定「count」的行。在本例中，由于计数大于 1 ，因此返回翻译字符串的复数形式：
 
     echo trans_choice('messages.apples', 10);
 
+
+
+也可以在复数化字符串中定义占位符属性。通过将数组作为第三个参数传递给 `trans_choice` 函数，可以替换这些占位符：
+
+    'minutes_ago' => '{1} :value minute ago|[2,*] :value minutes ago',
+
+    echo trans_choice('time.minutes_ago', 5, ['value' => 5]);
+
+如果要显示传递给 `trans_choice` 函数的整数值，可以使用内置的 `:count` 占位符：
+
+    'apples' => '{0} There are none|{1} There is one|[2,*] There are :count',
+
 <a name="overriding-package-language-files"></a>
-## 重写扩展包的语言文件
+## 覆盖扩展包的语言文件
 
-部分扩展包可能会附带自己的语言文件。你可以通过在 `resources/lang/vendor/{package}/{locale}` 放置文件来重写它们，而不是直接修改扩展包的核心文件。
+有些包可能随自己的语言文件一起装运。你可以将文件放置在 `lang/vendor/{package}/{locale}` 目录中，而不是更改扩展包的核心文件来调整这些行。
 
-例如，你需要重写 `skyrim/hearthfire` 扩展包的英文语言文件 `messages.php` ，则需要把文件放置在 `resources/lang/vendor/hearthfire/en/messages.php` 。在这个文件中只应定义要覆盖的翻译字符串。任何没有被覆盖的翻译字符串仍将从扩展包的原始语言文件中加载。
-
-## 译者署名
-
-| 用户名 | 头像 | 职能 | 签名 |
-|---|---|---|---|
-| [@JokerLinly](https://learnku.com/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  | Review | Stay Hungry. Stay Foolish. |
-
----
-
->
-> 转载请注明：本文档由 LearnKu 技术论坛 [learnku.com](https://learnku.com) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
->
-> 文档原地址： https://learnku.com/docs/laravel/9.x
+例如，如果需要重写位于名为 `skyrim/hearthfire` 的包的 `messages.php` 文件内容，应将语言文件放在： `lang/vendor/hearthfire/en/messages.php` 在这个文件中，你应该只定义要覆盖的翻译字符串。任何未重写的翻译字符串仍将从包的原始语言文件中加载。
