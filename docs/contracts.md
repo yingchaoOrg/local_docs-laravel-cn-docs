@@ -37,7 +37,7 @@ Laravel 的 [Facade](/docs/laravel/9.x/facades) 和辅助函数提供了一种�
 Laravel 中的许多类都是通过 [服务容器](https://learnku.com/docs/Laravel/9.x/container) 解析的，包括控制器、事件侦听器、中间件、队列任务，甚至路由闭包。因此，要实现契约，你只需要在被解析的类的构造函数中「类型提示」接口。
 
 例如，看看下面的这个事件监听器：
-
+```php
  <?php
 
     namespace App\Listeners;
@@ -78,15 +78,18 @@ Laravel 中的许多类都是通过 [服务容器](https://learnku.com/docs/Lara
         }
     }
 
+```
 当解析事件监听器时，服务容器将读取构造函数上的类型提示，并注入适当的值。 要了解更多有关在服务容器中注册内容的信息，请查看 [其文档](/docs/laravel/9.x/container)。
 
-<a name="contract-reference"></a>
+
 ## Contract 参考
 
 下表提供了所有 Laravel Contract 及对应的 Facade 的快速参考：
 
-Contract  |  对应的 Facade
-------------- | -------------
+
+
+| Contract  |  对应的 Facade| 
+| ------------- | ------------- |
 [Illuminate\Contracts\Auth\Access\Authorizable](https://github.com/illuminate/contracts/blob/laravel/9.x/Auth/Access/Authorizable.php) | &nbsp;
 [Illuminate\Contracts\Auth\Access\Gate](https://github.com/illuminate/contracts/blob/laravel/9.x/Auth/Access/Gate.php) | `Gate`
 [Illuminate\Contracts\Auth\Authenticatable](https://github.com/illuminate/contracts/blob/laravel/9.x/Auth/Authenticatable.php) | &nbsp;

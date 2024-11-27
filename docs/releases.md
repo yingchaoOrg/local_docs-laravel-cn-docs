@@ -1,501 +1,514 @@
-# Laravel 发行说明
+# 发行说明
 
-- [版本控制方案](#versioning-scheme)
+- [版本化方案](#versioning-scheme)
 - [支持策略](#support-policy)
-- [Laravel 5.5](#laravel-5.5)
+- [Laravel 9](#laravel-9)
 
 <a name="versioning-scheme"></a>
-## 版本控制方案
+## 版本化方案
 
-Laravel 的版本控制方案继续以下约定： `主版本号.次版本号.修订号`。次版本号的框架会在每六个月发布一次 (二月和八月)，修订号发布可能会每周发布一次。而修订号版本**不**应该包含破坏性更改。
+Laravel 及官方发布的包皆遵循 [语义化版本](https://semver.org)。主要的框架版本每年「2 月」发布，而次要的和补丁版本可能每周发布一次。次要版本和修补程序版本应 **从不** 包含非兼容性的更改。
 
-当你从应用程序中或者在包中引用 Laravel 框架或其组件时，应始终使用版本约束，例如 `5.5.*`，因为 Laravel 的次版本号会包括突破性更改。但是，我们会努力确保你可以在一天或更短时间内完成更新。
+你从应用或包中引用 Laravel 框架或其组件时，应始终使用版本约束，如 `^9.0`，因为 Laravel 的主要版本确实包含非兼容性更改。但是，我们努力确保您可以在一天或更短的时间内更新到新的主要版本。
 
-主版本号之间的迭代往往需要多年，每次迭代都代表了框架的架构和底层结构发生了改变。而目前并没有准备开发主版本号的计划。
+<a name="named-arguments"></a>
+#### 命名参数
 
-#### 为什么 Laravel 不使用语义版本控制？
-
-一方面，Laravel 所有可选的组件（Cashier、Dusk、Valet、Socialite 等等）都使用语义版本控制。然而 Laravel 框架本身并没有这样做。原因是语义版本控制是确定两段代码是否兼容的「简化」方法。即使是使用语义版本控制，你仍然必须安装升级包并运行你的自动化测试组件，来确定*事实上*是否有任何异常与代码不兼容。
-
-相反，Laravel 框架使用的版本控制方案更适合实际的发布。此外，因为修订版本的发布**不**包含破坏性变更，只要你的版本遵循 `主版本号.次版本号.*` 的约定， 你就不会接收到破坏性变更。
+目前，PHP 的 [命名参数](https://www.php.net/manual/zh/functions.arguments.php#functions.named-arguments)  功能还没有被 Laravel 的向后兼容性指南所涵盖。我们可以在必要时选择重命名函数参数，以改进 Laravel 代码库。因此，在调用 Laravel 方法时使用命名参数应该谨慎，并且要理解参数名将来可能会改变。
 
 <a name="support-policy"></a>
 ## 支持策略
 
-对于 LTS 版本，例如 Laravel 5.1，提供两年的错误修复和三年的安全修复。这些版本提供最长时间的支持和维护。对于一般版本，则只是提供六个月的错误修复和为期一年的安全修复。
+对于所有 Laravel 发行版本，BUG 修复的期限为 18 个月，安全修复的期限为 2 年。对于包括 Lumen 在内的所有额外的库，只有最新的版本才会得到 BUG 修复。此外，请查阅 Laravel 支持的 [数据库版本](/docs/laravel/9.x/database#introduction)。
 
 
-> [Laravel 的发布路线图](https://learnku.com/articles/2594/laravel-release-roadmap) - by [Summer](https://github.com/summerblue)
 
-<a name="laravel-5.5"></a>
-## Laravel 5.5
+<table><tbody>
+    <tr>
+        <th>版本</th><th> PHP (*) </th><th>发行时间</th><th>Bug 修复截止时间</th><th>安全修复截止时间</th>
+    </tr>
+    <tr>
+        <td style="background:rgb(244 157 55); ">6 (LTS)  </td>
+        <td>7.2 - 8.0</td>
+        <td>2019年9月3日  </td>
+		<td>2022年1月25日 </td>
+        <td>2022年9月6日 </td>
+    </tr>
+    <tr>
+        <td style ="background:rgba(249 50 44);">7</td>
+        <td> 7.2 - 8.0</td>
+         <td>2020年3月3日  </td>
+		<td>2020年10月6日 </td>
+        <td>2021年3月3日 </td>
+    </tr>
+	 <tr>
+        <td >8</td>
+        <td> 7.3 - 8.1</td>
+         <td>2020年9月8日  </td>
+		<td>2022年7月26日 </td>
+        <td>2023年1月24日 </td>
+    </tr>
+	<tr>
+        <td >9</td>
+        <td>8.0 - 8.1</td>
+         <td>2022年2月8日  </td>
+		<td>2023年8月8日 </td>
+        <td>2024年2月8日 </td>
+    </tr>
+<tr>
+        <td >10</td>
+        <td>8.0 - 8.1</td>
+         <td>2023年2月7日  </td>
+		<td>2024年8月7日 </td>
+        <td>2025年2月7日 </td>
+    </tr>
+</table>
+        <span><div style="height:0.75rem; margin-right:0.5rem; width:0.75rem;background:rgba(249 50 44);display:inline-block; "></div>
+		<div style=" display:inline;">生命周期结束</div></span>
+        <div style="height:0.75rem; margin-right:0.5rem; width:0.75rem;background:rgb(244 157 55); display:inline-block; "></div>
+        <div style=" display:inline;">仅安全修复</div>
+		
+(*) 支持的PHP版本
 
-Laravel 5.5 对 Laravel 5.4 中的包进行了改进，其中添加了：包自动发现、API 资源／转换、控制台命令自动注册、队列任务链、队列任务速率限制、基于时间任务的尝试、可渲染的邮件、自定义异常报告、异常处理规范化、数据库测试改进、更简单自定义验证规则、前端预配置、`Route::view` 和 `Route::redirect` 方法、Memcached 和 Redis 缓存驱动程序的「锁定」、按需通知功能、Dusk 支持 Chrome 的 headless 模式 、方便的 Blade 快捷键、改进可信代理支持等。
+<a name="laravel-9"></a>
+## Laravel 9
 
-此外， Laravel 5.5 同时发布了 [Laravel Horizon](http://horizon.laravel.com)，一个用来管理你的 Redis 队列的漂亮的队列仪表板和配置系统。
+正如你所知，随着 Laravel 8 的发布，Laravel 已经过渡到了年度发布。以前，主要版本每6个月发布一次。这一转变旨在减轻社区的维护负担，并挑战我们的开发团队在不引入突破性更改的情况下提供惊人、强大的新功能。因此，我们在不破坏向后兼容性的情况下，向 Laravel 8 提供了各种强大的功能，例如并行测试支持、改进的 Breeze starter 工具包、HTTP 客户端改进，甚至还有新的 Eloquent  关联关系类型，例如`oFMany`(一对多检索)。
 
-> {tip} 这份文档总结了最值得注意的框架变更，如果需要了解更多，请查看 [GitHub](https://github.com/laravel/framework/blob/5.5/CHANGELOG-5.5.md) 上更全面的变更日志。
+因此，在当前版本中发布新功能的承诺可能会导致未来的「主要」版本主要用于「维护」任务，例如升级上游依赖项，这可以在这些发行说明中看到。
 
-### Laravel Horizon
+Laravel 9 延续了 Laravel 8.x 的改进通过引入对 Symfony 6.0 组件、Symfony Mailer、Flysystem 3.0、改进的 `routes:list` 输出、Laravel Scout 数据库驱动程序、新的 Eloquent 访问器 / 修改器语法、通过枚举的隐式路由绑定，以及其他各种错误修复和可用性改进。
 
-Horizon 为你的 Laravel Redis 队列提供了一个漂亮的仪表版和代码驱动配置。Horizon 允许你轻松监控队列系统的关键指标，例如任务吞吐量、运行时间和失败任务。
+<a name="php-8"></a>
+### PHP 8.0
 
-所有的配置都存放一个简单的配置文件中，让你的整个团队可以协同工作。
+Laravel 9.x 至少需要 PHP8.0.2。
 
-更多关于 Horizon 的信息，请查看 [完整的 Horizon 文档](/docs/{{version}}/horizon)。
+<a name="symfony-mailer"></a>
+### Symfony Mailer
 
-### 包自动发现
+_Symfony Mailer 的支持是由 [Dries Vints](https://github.com/driesvints)_, [James Brooks](https://github.com/jbrooksuk), 和 [Julius Kiekbusch](https://github.com/Jubeki).
 
-在之前的 Laravel 版本中，安装包通常需要几个步骤，例如添加服务提供器到 `app` 配置文件并注册相关的 facades。现在，从 Laravel 5.5 开始，Laravel 可以自动检测并注册服务提供器和 facades。
+Laravel 以前的版本使用了 [Swift Mailer](https://swiftmailer.symfony.com/docs/introduction.html) 库发送外发邮件。然而，该库已不再维护，由 Symfony Mailer 继承。
 
-例如，你可以通过 `barryvdh/laravel-debugbar` 安装这个包来体验一下。用 Composer 来安装之后，无需任何配置，就可以直接使用 debugbar：
 
-    composer require barryvdh/laravel-debugbar
 
-包的开发者只需要将他们的服务提供器和门面添加到他们的包的 `composer.json` 文件中：
+请查看 [升级指南](/docs/laravel/9.x/upgrade#symfony-mailer) 以了解有关确保您的应用程序与 Symfony Mailer 兼容的更多信息。
 
-    "extra": {
-        "laravel": {
-            "providers": [
-                "Laravel\\Tinker\\TinkerServiceProvider"
-            ]
-        }
-    },
+<a name="flysystem-3"></a>
+### Flysystem 3.x
 
-更多信息，请查看详细文档 [包开发](/docs/{{version}}/packages).
+Flysystem 3.x 的支持由 [Dries Vints](https://github.com/driesvints) 提供。
+Laravel 9.x 将我们上游的 Flysystem 依赖升级到 Flysystem 3.x。 Flysystem 为 `Storage` 门面提供的所有文件系统交互提供支持。
 
-### API 资源
+请查看 [升级指南](/docs/laravel/9.x/upgrade#flysystem-3) 以了解有关确保您的应用程序与 Flysystem 3.x 兼容的更多信息。
 
-构建 API 时，你可能需要一个位于 Eloquent 模型和实际返回给用户响应之间的 JSON 转换层。Laravel 的资源类允许你以轻松地方式将你的模型和模型集合转换为 JSON。而这个资源类代表了需要转换为 JSON 结构的单个模型。例如，这里是一个简单的用户资源类：
+<a name="eloquent-accessors-and-mutators"></a>
+### Eloquent 访问器/修改器 改进
 
-````php
-<?php
+改进的 Eloquent 访问器/修改器由 [Taylor Otwell](https://github.com/taylorotwell) 贡献。
 
-namespace App\Http\Resources;
+Laravel 9.x 提供了一种新的方式来定义 Eloquent [访问器和修改器](/docs/laravel/9.x/eloquent-mutators#accessors-and-mutators)。在以前的 Laravel 版本中，定义访问器和修改器的唯一方法是在模型上定义前缀方法，如下所示：
 
-use Illuminate\Http\Resources\Json\Resource;
-
-class User extends Resource
+```php
+public function getNameAttribute($value)
 {
-    /**
-     * 将资源转换为数组。
-     *
-     * @param  \Illuminate\Http\Request
-     * @return array
-     */
-    public function toArray($request)
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'email' => $this->email,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-        ];
-    }
+    return strtoupper($value);
 }
-````
 
-当然这只是 API 资源的最基本的例子。 Laravel 还提供各种方法来帮助你构建资源和资源集合。有关更多信息，请查看有关 API 资源的 [完整文档](/docs/{{version}}/eloquent-resources)。
-
-### 控制台命令自动注册
-
-当创建一个新的控制台命令，不再需要必须手动把它们列入到你的控制台内核的 `$commands` 属性中。在内核的 `commands` 方法中调用一个新的 `load` 方法，它会扫描给定的目录来获取控制台命令并自动注册它们：
-
-    /**
-     * 注册应用程序的命令。
-     *
-     * @return void
-     */
-    protected function commands()
-    {
-        $this->load(__DIR__.'/Commands');
-
-        // ...
-    }
-
-### 新前端预配置
-
-虽然基础的 Vue 脚手架依然包含在 Laravel 5.5 中，不同的是，现在有了几种新的前端预设选项可用的。一个新的 Laravel 应用中，你可以使用 `preset` 命令将 Vue 脚手架更换为 React 脚手架：
-
-    php artisan preset react
-
-或者，你可以使用 `preset none` 完全删除 JavaScript 和 CSS 框脚手架。这个预设配置会为你的应用提供简单的 Sass 文件和实用的 JavaScript：
-
-    php artisan preset none
-
-> {note} 这个命令只能用在新创建的框架中，而不应该在现有的应用中使用它。
-
-### 队列任务链
-
-任务链允许你指定按顺序运行的队列任务列表。如果队列中的一个任务失败，则其余任务便不会再运行。要执行队列的任务链，你可以在分配任务时使用 `withChain` 方法：
-
-    ProvisionServer::withChain([
-        new InstallNginx,
-        new InstallPhp
-    ])->dispatch();
-
-### Queued 任务速率限制
-
-如果你的应用程序与 Redis 进行交互，那你就可以根据时间或并发来调整排队的任务。当你队列的任务与限制速率的 API 进行交互时，这个功能就派上用场了。例如，你可以限制给定类型的任务只能每 60 秒运行 10 次：
-
-````Php
-Redis::throttle('key')->allow(10)->every(60)->then(function () {
-    // 任务逻辑...
-}, function () {
-    // 无法获得锁...
-
-    return $this->release(10);
-});
-````
-
-> {tip} 在上面的示例中，`key` 是唯一可以标识要限制的任务类型的字符串。 例如，你可能会根据任务的类名和其运行的 Eloquent 模型的 ID 来构建这个 key。
-
-或者，你也可以指定同时处理给定任务的最大工作进程数。当队列的任务正在修改一次只能由一个任务修改的资源时，我们可以将给定类型的任务限制为一次只能由一个工作进程处理：
-
-````Php
-Redis::funnel('key')->limit(1)->then(function () {
-    // 任务逻辑...
-}, function () {
-    // 无法获得锁...
-
-    return $this->release(10);
-});
-````
-
-### 基于时间的任务尝试
-
-作为在任务失败之前定义任务可能尝试多少次的替代方法，现在你可以定义任务的超时时间。这允许在给定时间范围内尝试次数的任务。将 `retryUntil` 方法添加到任务类中来定义任务的超时时间：
-
-````Php
-/**
- * 确定任务的超时时间。
- *
- * @return \DateTime
- */
-public function retryUntil()
+public function setNameAttribute($value)
 {
-    return now()->addSeconds(5);
+    $this->attributes['name'] = $value;
 }
-````
+```
 
-> {tip} 你也可以在队列的事件监听器上定义一个 `retryUntil` 方法。
+然而，在 Laravel 9.x 中，你可以使用一个不带前缀的方法定义访问器和修改器，该方法的返回类型是`Illuminate\Database\Eloquent\Casts\Attribute`：
 
-### 验证规则对象
+```php
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
-验证规则对象为你的应用程序提供了一种新的、紧凑的方式来添加自定义验证规则。在以前的 Laravel 版本中，`Validator::extend` 方法用于通过闭包添加自定义验证规则。但是，某种程度上这样挺麻烦的。在 Laravel 5.5 中，可以用新的 Artisan 命令 `make:rule` 在 `app/Rules` 目录中创建一个新的验证规则：
+public function name(): Attribute
+{
+    return new Attribute(
+        get: fn ($value) => strtoupper($value),
+        set: fn ($value) => $value,
+    );
+}
+```
 
-    php artisan make:rule ValidName
+此外，这种定义访问器的新方法将缓存由属性返回的对象值，就像 [自定义转换类](/docs/laravel/9.x/eloquent-mutators#custom-casts)：
 
-验证对象只有两个方法：`passes` 和 `message`。`passes` 方法接收属性值和名称，并根据属性值是否有效返回 `true` 或 `false`。`message` 方法返回验证失败时应使用的验证错误消息：
+```php
+use App\Support\Address;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+
+public function address(): Attribute
+{
+    return new Attribute(
+        get: fn ($value, $attributes) => new Address(
+            $attributes['address_line_one'],
+            $attributes['address_line_two'],
+        ),
+        set: fn (Address $value) => [
+            'address_line_one' => $value->lineOne,
+            'address_line_two' => $value->lineTwo,
+        ],
+    );
+}
+```
 
 
-    <?php
 
-    namespace App\Rules;
+<a name="enum-casting"></a>
+### Enum Eloquent 属性转换
 
-    use Illuminate\Contracts\Validation\Rule;
+> 注意：枚举转换仅适用于 PHP 8.1+。
 
-    class ValidName implements Rule
-    {
-        /**
-         * 确定验证规则是否通过
-         *
-         * @param  string  $attribute
-         * @param  mixed  $value
-         * @return bool
-         */
-        public function passes($attribute, $value)
-        {
-            return strlen($value) === 6;
-        }
+枚举转换由 [Mohamed Said](https://github.com/themsaid) 贡献。
 
-        /**
-         * 获取验证错误信息
-         *
-         * @return string
-         */
-        public function message()
-        {
-            return 'The name must be six characters long.';
-        }
-    }
+Eloquent 现在允许您将属性值转换为 PHP ["backed" enums](https://www.php.net/manual/en/language.enumerations.backed.php)。 为此，您可以在模型的 `$casts` 属性数组中指定要转换的属性和枚举：
 
-一旦定义了规则，你就可以简单地通过传递一个规则对象的实例与其他验证规则来使用它：
-
-    use App\Rules\ValidName;
-
-    $this->validate($request, [
-        'name' => ['required', new ValidName],
-    ]);
-
-### 可信代理集成
-
-在应用程序后面的负载均衡器上运行到期的 TLS / SSL 证书时，你会注意到你的应用有时不能创建 HTTPS 链接。这通常是因为你的应用正在从 80 端口转发流量的负载均衡器不知道安全链接应该被生成。
-
-为了解决这个问题，很多 Laravel 用户安装了Chris Fidao 的包 [Trusted Proxies](https://github.com/fideloper/TrustedProxy) 。因为这是一个常见情况，Chris 的包现在已经默认集成在 Laravel 5.5 中了。
-
-默认情况下，Laravel 5.5 中包含了一个新的中间件 `App\Http\Middleware\TrustProxies`。这个中间件允许你快速自定义受信任的代理：
-
-    <?php
-
-    namespace App\Http\Middleware;
-
-    use Illuminate\Http\Request;
-    use Fideloper\Proxy\TrustProxies as Middleware;
-
-    class TrustProxies extends Middleware
-    {
-        /**
-         * 这个应用程序的可信代理
-         *
-         * @var array
-         */
-        protected $proxies;
-
-        /**
-         * 当前的代理头映射
-         *
-         * @var array
-         */
-        protected $headers = [
-            Request::HEADER_FORWARDED => 'FORWARDED',
-            Request::HEADER_X_FORWARDED_FOR => 'X_FORWARDED_FOR',
-            Request::HEADER_X_FORWARDED_HOST => 'X_FORWARDED_HOST',
-            Request::HEADER_X_FORWARDED_PORT => 'X_FORWARDED_PORT',
-            Request::HEADER_X_FORWARDED_PROTO => 'X_FORWARDED_PROTO',
-        ];
-    }
-
-### 按需通知
-
-有时候你可能需要发送通知给不在应用中存储的 「用户」，使用新的 `Notification::route` 方法，你可以在发送之前指定临时的路由信息：
-
-    Notification::route('mail', 'taylor@laravel.com')
-                ->route('nexmo', '5555555555')
-                ->send(new InvoicePaid($invoice));
-
-### 可渲染的邮件
-
-现在可直接从路由返回邮件，让你可以在浏览器快速预览你的邮件样式：
-
-    Route::get('/mailable', function () {
-        $invoice = App\Invoice::find(1);
-
-        return new App\Mail\InvoicePaid($invoice);
-    });
-
-### 自定义异常报告
-
-在之前的 Laravel 版本中，你可能不得不在异常处理程序中使用「类型检查」，来为给定异常呈现自定义响应。例如，你可能有在处理异常程序的 `render` 方法中写了这样的代码：
+    use App\Enums\ServerStatus;
 
     /**
-     * 渲染异常信息给一个 HTTP 响应
+     * The attributes that should be cast.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Exception  $exception
-     * @return \Illuminate\Http\Response
+     * @var array
      */
-    public function render($request, Exception $exception)
-    {
-        if ($exception instanceof SpecialException) {
-            return response(...);
-        }
+    protected $casts = [
+        'status' => ServerStatus::class,
+    ];
 
-        return parent::render($request, $exception);
+一旦你在你的模型上定义了转换，当你与属性交互时，指定的属性将自动转换为枚举：
+
+    if ($server->status == ServerStatus::provisioned) {
+        $server->status = ServerStatus::ready;
+
+        $server->save();
     }
 
-在 Laravel 5.5 中，你可以直接在异常中定义一个 `render` 方法。这个方法允许你将自定义响应呈现逻辑直接放置在异常上来避免异常处理程序中的条件逻辑积累。如果你想要自定义异常的报告逻辑，你可以在这个类中定义 `report` 方法：
+<a name="implicit-route-bindings-with-enums"></a>
+### 使用枚举的隐式路由绑定
+
+隐式路由绑定由 [Nuno Maduro](https://github.com/nunomaduro)贡献。
+
+PHP 8.1 引入了对 [Enums](https://www.php.net/manual/en/language.enumerations.backed.php) 的支持。 Laravel 9.x 引入了在路由定义中键入提示 Enum 的能力，并且 Laravel 只会在该路由段是 URI 中的有效 Enum 值时调用该路由。 否则，将自动返回 HTTP 404 响应。 例如，给定以下枚举：
+
+```php
+enum Category: string
+{
+    case Fruits = 'fruits';
+    case People = 'people';
+}
+```
+
+你可以定义一个只有在 `{category}` 路由段是 `fruits` 或 `people` 时才会被调用的路由。 否则，将返回 HTTP 404 响应：
+
+```php
+Route::get('/categories/{category}', function (Category $category) {
+    return $category->value;
+});
+```
 
 
-    <?php
 
-    namespace App\Exceptions;
+<a name="forced-scoping-of-route-bindings"></a>
+### 路由绑定的强制作用域
 
-    use Exception;
+路由绑定的强制作用域由 [Claudio Dekker](https://github.com/claudiodekker)贡献.
 
-    class SpecialException extends Exception
-    {
-        /**
-         * 报告异常
-         *
-         * @return void
-         */
-        public function report()
-        {
-            //
-        }
+在之前的 Laravel 版本中，您可能希望在路由定义中限定第二个 Eloquent 模型，使其必须是之前 Eloquent 模型的子模型。 例如，考虑这个通过 slug 为特定用户检索博客文章的路由定义：
 
-        /**
-         * 渲染异常
-         *
-         * @param  \Illuminate\Http\Request
-         * @return void
-         */
-        public function render($request)
-        {
-            return response(...);
-        }
-    }
+    use App\Models\Post;
+    use App\Models\User;
 
-### 请求验证
-
-`Illuminate\Http\Request` 对象现在提供一个 `validate` 方法, 允许你快速验证传入路由闭包或控制器的请求：
-
-    use Illuminate\Http\Request;
-
-    Route::get('/comment', function (Request $request) {
-        $request->validate([
-            'title' => 'required|string',
-            'body' => 'required|string',
-        ]);
-
-        // ...
+    Route::get('/users/{user}/posts/{post:slug}', function (User $user, Post $post) {
+        return $post;
     });
 
-### 异常处理规范化
+当使用自定义键控隐式绑定作为嵌套路由参数时，Laravel 将自动限定查询范围以通过其父级检索嵌套模型，使用约定来猜测父级上的关系名称。 但是，当自定义键用于子路由绑定时，Laravel 之前仅支持此行为。
 
-现在在整个框架中，验证异常处理的响应消息是一致的。以前，框架中有多个位置需要将默认的验证错误响应的 JSON 格式更改为自定义。现在，Laravel 5.5 中验证响应默认 JSON 格式现在遵守以下约定：
+然而，在 Laravel 9.x 中，即使没有提供自定义键，你现在也可以指示 Laravel 限定“子”绑定。 为此，您可以在定义路由时调用 `scopeBindings` 方法：
 
-    {
-        "message": "The given data was invalid.",
-        "errors": {
-            "field-1": [
-                "Error 1",
-                "Error 2"
-            ],
-            "field-2": [
-                "Error 1",
-                "Error 2"
-            ],
-        }
-    }
+    use App\Models\Post;
+    use App\Models\User;
 
-所有验证错误的  JSON 格式可以通过在 `App\Exceptions\Handler` 类中定义单个方法来控制。例如，下面将使用 Laravel 5.4 方式进行来自定义验证响应的  JSON 格式：
+    Route::get('/users/{user}/posts/{post}', function (User $user, Post $post) {
+        return $post;
+    })->scopeBindings();
 
-    use Illuminate\Validation\ValidationException;
+或者，您可以指示整个路由定义组使用范围绑定：
 
-    /**
-     * 将验证异常转换为 JSON 响应
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Validation\ValidationException  $exception
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function invalidJson($request, ValidationException $exception)
-    {
-        return response()->json($exception->errors(), $exception->status);
-    }
-
-### 缓存锁
-
-Redis 和 Memcached 缓存驱动程序现在支持获取和释放原子「锁」。这提供了一种在不考虑竞争条件的情况下获取任意锁的简单方法。举个例子，在执行任务之前，你可能希望获得给定值的锁定，来确保没有其他进程在执行相同的任务：
-
-    if (Cache::lock('lock-name', 60)->get()) {
-        // 获得锁 60 秒，继续处理……
-
-        Cache::lock('lock-name')->release();
-    } else {
-        // 无法获得锁……
-    }
-
-或者，你可以将给 `get` 方法传递一个闭包。在判断可以锁定给定值并且在执行闭包后自动释放锁定的情况下，闭包才会执行：
-
-    Cache::lock('lock-name', 60)->get(function () {
-        // 获得锁 60 秒
+    Route::scopeBindings()->group(function () {
+        Route::get('/users/{user}/posts/{post}', function (User $user, Post $post) {
+            return $post;
+        });
     });
 
-此外，你也可以直接对给定值进行 「阻塞」直到锁可用为止:
+<a name="controller-route-groups"></a>
+### 控制器路由组
 
-    if (Cache::lock('lock-name', 60)->block(10)) {
-        // 等待最长10秒的时间，锁可用
-    }
+控制器路由组改进由 [Luke Downing](https://github.com/lukeraymonddowning)贡献.
 
-### Blade 改进
 
-编写一个自定义指令有时候比定义简单的自定义条件语句更复杂。因此 Blade 现在提供一个 `Blade::if` 方法，它允许你使用闭包快速定义自定义条件指令。举个例子，定义一个检查当前应用程序环境的自定义条件，我们可以在我们的 `AppServiceProvider` 的 `boot` 方法这样做：
 
-    use Illuminate\Support\Facades\Blade;
+您现在可以使用 `controller` 方法为组内的所有路由定义公共控制器。 然后，在定义路由时，您只需要提供它们调用的控制器方法：
+
+    use App\Http\Controllers\OrderController;
+
+    Route::controller(OrderController::class)->group(function () {
+        Route::get('/orders/{id}', 'show');
+        Route::post('/orders', 'store');
+    });
+
+<a name="full-text"></a>
+### 全文索引 / Where 子句
+
+全文索引和"where"子句由 [Taylor Otwell](https://github.com/taylorotwell) 和 [Dries Vints](https://github.com/driesvints)贡献。
+
+使用 MySQL 或 PostgreSQL 时，现在可以将 `fullText` 方法添加到列定义中以生成全文索引：
+
+    $table->text('bio')->fullText();
+
+此外，`whereFullText` 和 `orWhereFullText` 方法可用于将全文“where”子句添加到具有[全文索引]的列的查询中（/docs/laravel/9.x/migrations#available-index -类型）。 这些方法将被 Laravel 转换成适合底层数据库系统的 SQL。 例如，将为使用 MySQL 的应用程序生成一个 `MATCH AGAINST` 子句：
+
+    $users = DB::table('users')
+               ->whereFullText('bio', 'web developer')
+               ->get();
+
+<a name="laravel-scout-database-engine"></a>
+### Laravel Scout 数据库引擎
+
+Laravel Scout 数据库引擎由 [Taylor Otwell](https://github.com/taylorotwell) and [Dries Vints](https://github.com/driesvints)贡献。
+
+如果您的应用程序与中小型数据库交互或工作量较小，您现在可以使用 Scout 的“数据库”引擎，而不是 Algolia 或 MeiliSearch 等专用搜索服务。 数据库引擎将在过滤现有数据库的结果时使用“where like”子句和全文索引，以确定查询的适用搜索结果。
+
+
+
+要了解有关 Scout 数据库引擎的更多信息，请参阅 [Scout 文档](/docs/laravel/9.x/scout)。
+
+<a name="rendering-inline-blade-templates"></a>
+### 渲染内联 Blade 模板
+
+渲染内联 Blade 模板由 [Jason Beggs](https://github.com/jasonlbeggs) 和 [Toby Zerner](https://github.com/tobyzerner)贡献。
+
+有时您可能需要将原始 Blade 模板字符串转换为有效的 HTML。 您可以使用 `Blade` 门面提供的 `render` 方法来完成此操作。 `render` 方法接受 Blade 模板字符串和提供给模板的可选数据数组：
+
+```php
+use Illuminate\Support\Facades\Blade;
+
+return Blade::render('Hello, {{ $name }}', ['name' => 'Julian Bashir']);
+```
+
+类似地，`renderComponent` 方法可用于通过将组件实例传递给该方法来渲染给定的类组件：
+
+```php
+use App\View\Components\HelloComponent;
+
+return Blade::renderComponent(new HelloComponent('Julian Bashir'));
+```
+
+<a name="slot-name-shortcut"></a>
+### Slot 名称快捷方式
+
+Slot 名称快捷方式由 [Caleb Porzio](https://github.com/calebporzio)贡献。
+
+在以前的 Laravel 版本中，slot名称是使用 `x-slot` 标签上的 `name` 属性提供的：
+
+```blade
+<x-alert>
+    <x-slot name="title">
+        Server Error
+    </x-slot>
+
+    <strong>Whoops!</strong> Something went wrong!
+</x-alert>
+```
+
+但是，从 Laravel 9.x 开始，您可以使用更方便、更短的语法来指定slot的名称：
+
+```xml
+<x-slot:title>
+    Server Error
+</x-slot>
+```
+
+<a name="checked-selected-blade-directives"></a>
+### Checked / Selected blade指令
+
+Checked and selected Blade 指令由 [Ash Allen](https://github.com/ash-jc-allen) 和 [Taylor Otwell](https://github.com/taylorotwell)贡献。
+
+为方便起见，您现在可以使用 `@checked` 指令轻松指示给定的 HTML 复选框输入是否已“选中”。 如果提供的条件评估为 `true`，则此指令将回显 `checked`：
+
+```blade
+<input type="checkbox"
+        name="active"
+        value="active"
+        @checked(old('active', $user->active)) />
+```
+
+
+
+同样，`@selected` 指令可用于指示是否应该“选择”给定的选择选项：
+
+```blade
+<select name="version">
+    @foreach ($product->versions as $version)
+        <option value="{{ $version }}" @selected(old('version') == $version)>
+            {{ $version }}
+        </option>
+    @endforeach
+</select>
+```
+
+<a name="bootstrap-5-pagination-views"></a>
+### Bootstrap 5 分页视图
+
+Bootstrap 5 分页视图由 [Jared Lewis](https://github.com/jrd-lewis)贡献。
+
+Laravel 现在包含使用 [Bootstrap 5](https://getbootstrap.com/) 构建的分页视图。 要使用这些视图而不是默认的 Tailwind 视图，您可以在 `App\Providers\AppServiceProvider` 类的 `boot` 方法中调用分页器的 `useBootstrapFive` 方法：
+
+    use Illuminate\Pagination\Paginator;
 
     /**
-     * 执行注册后引导服务
+     * Bootstrap any application services.
      *
      * @return void
      */
     public function boot()
     {
-        Blade::if('env', function ($environment) {
-            return app()->environment($environment);
-        });
+        Paginator::useBootstrapFive();
     }
 
-定义完之后，你可以在模版中这样使用：
+<a name="improved-validation-of-nested-array-data"></a>
+### 改进了嵌套数组数据的验证
 
-    @env('local')
-        // 应用是本地环境...
-    @else
-        // 应用不是本地环境...
-    @endenv
+嵌套数组数据的验证由 [Steve Bauman](https://github.com/stevebauman)贡献。
 
-除了能够轻松定义 Blade 条件指令之外，5.5 还添加了指令 `@auth` 和 `@guest` 来快速检查当前用户的身份验证状态：
+有时，在为属性分配验证规则时，您可能需要访问给定嵌套数组元素的值。 您现在可以使用 `Rule::forEach` 方法完成此操作。 `forEach` 方法接受一个闭包，该闭包将为验证中的数组属性的每次迭代调用，并将接收属性的值和显式的、完全扩展的属性名称。 闭包应该返回一个规则数组来分配给数组元素：
 
-    @auth
-        // 当前用户已经登录...
-    @endauth
+    use App\Rules\HasPermission;
+    use Illuminate\Support\Facades\Validator;
+    use Illuminate\Validation\Rule;
 
-    @guest
-        // 当前用户未登录...
-    @endguest
+    $validator = Validator::make($request->all(), [
+        'companies.*.id' => Rule::forEach(function ($value, $attribute) {
+            return [
+                Rule::exists(Company::class, 'id'),
+                new HasPermission('manage-company', $value),
+            ];
+        }),
+    ]);
 
-### 新路由方法
-
-如果要定义重定向到另一个 URI 的路由，可以使用 `Route::redirect` 方法。这个方法算是一种快捷方式。这样你就不必定义完整的路由或控制器来执行简单的重定向：
-
-    Route::redirect('/here', '/there', 301);
-
-同样的效果，如果你的路由只需要返回一个视图，使用 `Route::view` 方法。`view` 方法接受一个 URI 作为第一个参数，视图名称作为其第二个参数。另外，你可以提供一个数组作为可选的第三个参数传递给视图：
-
-    Route::view('/welcome', 'welcome');
-
-    Route::view('/welcome', 'welcome', ['name' => 'Taylor']);
-### 「Sticky」数据库连接
-
-#### `sticky` 选项
-
-配置读／写数据库连接时，可以使用新的 `sticky` 配置选项：
-
-````
-'mysql' => [
-    'read' => [
-        'host' => '192.168.1.1',
-    ],
-    'write' => [
-        'host' => '196.168.1.2'
-    ],
-    'sticky'    => true,
-    'driver'    => 'mysql',
-    'database'  => 'database',
-    'username'  => 'root',
-    'password'  => '',
-    'charset'   => 'utf8mb4',
-    'collation' => 'utf8mb4_unicode_ci',
-    'prefix'    => '',
-],
-````
-
-`sticky` 选项是一个可选的值，可用于在当前请求周期内立即读取已写入数据库的记录。如果启用了 `sticky` 选项，并且在当前请求周期内对数据库执行了「写入」操作，任何进一步的「读取」操作将使用「写入」连接。这确保了在该请求周期期间写入的任何数据可以在同一请求期间立即从数据库读回。你可以决定这是否是你应用程序所需的行为。
-
-## 译者署名
-
-| 用户名 | 头像 | 职能 | 签名 |
-|---|---|---|---|
-| [@dongm2ez](https://github.com/dongm2ez)  | <img class="avatar-66 rm-style" src="https://avatars3.githubusercontent.com/u/9032795?v=3&s=460?imageView2/1/w/100/h/100">  |  翻译  | 欢迎在 [Github](https://github.com/dongm2ez) 上关注我 |
-| [@JokerLinly](https://learnku.com/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  |  Review  | Stay Hungry. Stay Foolish. |
+<a name="laravel-breeze-api"></a>
+### Laravel Breeze API & Next.js
 
 
----
 
->
-> 转载请注明：本文档由 LearnKu 技术论坛 [learnku.com](https://learnku.com) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
->
-> 文档原地址： https://learnku.com/docs/laravel/9.x
+Laravel Breeze API 和 Next.js 由 [Taylor Otwell](https://github.com/taylorotwell) and [Miguel Piedrafita](https://twitter.com/m1guelpf)贡献。
+
+[Laravel Breeze](/docs/laravel/9.x/starter-kits#breeze-and-next) 入门套件已获得“API”脚手架模式和免费 [Next.js](https://nextjs.org ) [前端实现](https://github.com/laravel/breeze-next)。 这个初学者工具包脚手架可用于快速启动用作后端的 Laravel 应用程序，以及用于 JavaScript 前端的 Laravel Sanctum 认证 API。
+
+<a name="exception-page"></a>
+### 改进 Ignition 错误页面
+
+Ignition由 [Spatie](https://spatie.be/)贡献。
+
+Spatie 创建的开源异常调试页面 Ignition 已经从头开始重新设计。 新的、改进的 Ignition 随 Laravel 9.x 一起提供，包括浅色/深色主题、可定制的“在编辑器中打开”功能等等。
+
+<p align="center">
+<img width="100%" src="https://cdn.learnku.com/uploads/images/202202/18/25486/juwOpUFX7p.png!large"/>
+</p>
+
+<a name="improved-route-list"></a>
+### 改进的 `route:list` CLI 输出
+
+改进的 `route:list` CLI 输出由 [Nuno Maduro](https://github.com/nunomaduro)贡献。
+
+`route:list` CLI 输出在 Laravel 9.x 版本中得到了显着改进，在探索你的路由定义时提供了一个美妙的新体验。
+
+<p align="center">
+<img src="https://cdn.learnku.com/uploads/images/202202/18/25486/rbbkbh2QKT.png!large"/>
+</p>
+
+<a name="test-coverage-support-on-artisan-test-Command"></a>
+### 使用 Artisan `test` 命令测试覆盖率
+
+使用 Artisan `test` 命令时的测试覆盖率由 [Nuno Maduro](https://github.com/nunomaduro)贡献。
+
+Artisan `test` 命令收到了一个新的 `--coverage` 选项，您可以使用它来探索您的测试为您的应用程序提供的代码覆盖率：
+
+```shell
+php artisan test --coverage
+```
+
+
+
+测试覆盖率结果将直接显示在 CLI 输出中。
+
+<p align="center">
+<img width="100%" src="https://cdn.learnku.com/uploads/images/202202/18/30138/GnM8gJDNhu.png!large"/>
+</p>
+
+此外，如果您想指定测试覆盖率必须满足的最低阈值，您可以使用该 `--min` 选项。如果未达到给定的最小阈值，则测试套件将失败：
+
+```shell
+php artisan test --coverage --min=80.3
+```
+
+<p align="center">
+<img width="100%" src="https://cdn.learnku.com/uploads/images/202202/18/30138/06IIcEzXFN.png!large"/>
+</p>
+
+<a name="soketi-echo-server"></a>
+### Soketi Echo 服务器
+
+_Soketi Echo 服务器由 [Alex Renoki](https://github.com/rennokki)_ 开发。
+
+虽然不是 Laravel 9.x 独有的，但 Laravel 最近协助编写了 Soketi 的文档，这是一个为 Node.js 编写的与 [Laravel Echo](/docs/laravel/9.x/broadcasting) 兼容的 Web Socket 服务器。Soketi 为那些喜欢管理自己的 Web Socket 服务器的应用程序提供了一个很好的、开源的替代 Pusher 和 Ably。
+
+有关使用 Soketi 的更多信息，请参阅 [广播文档](/docs/laravel/9.x/broadcasting) 和 [Soketi 文档](https://docs.soketi.app/)。
+
+<a name="improved-collections-ide-support"></a>
+### 改进的集合 IDE 支持
+
+_[Nuno Maduro](https://github.com/nunomaduro)_ 贡献了改进的集合 IDE 支持。
+
+Laravel 9.x 为集合组件添加了改进的“通用”样式类型定义，改进了 IDE 和静态分析支持。 [PHPStorm](https://blog.jetbrains.com/phpstorm/2021/12/phpstorm-2021-3-release/#support_for_future_laravel_collections) 或 [PHPStan](https://phpstan.org) 等 IDE 静态分析工具现在可以更好地理解 Laravel 集合。
+
+<p align="center">
+<img width="100%" src="https://cdn.learnku.com/uploads/images/202202/18/30138/zzM0Yn3RSa.gif!large"/>
+</p>
+
+
+
+<a name="new-helpers"></a>
+### 新助手
+
+Laravel 9.x 引入了两个新的、方便的辅助函数，你可以在自己的应用程序中使用它们。
+
+<a name="new-helpers-str"></a>
+#### `str`
+
+该 `str` 函数返回 `Illuminate\Support\Stringable` 给定字符串的新实例。这个函数等价于 `Str::of` 方法：
+
+    $string = str('Taylor')->append(' Otwell');
+
+    // 'Taylor Otwell'
+
+如果没有为 `str` 函数提供参数，则函数返回 `Illuminate\Support\Str` 的实例：
+
+    $snake = str()->snake('LaravelFramework');
+
+    // 'laravel_framework'
+
+<a name="new-helpers-to-route"></a>
+#### `to_route`
+
+该 `to_route` 函数为给定的命名路由生成重定向 HTTP 响应，提供了一种从路由和控制器重定向到命名路由的表达方式：
+
+    return to_route('users.show', ['user' => 1]);
+
+如有必要，您可以将应分配给重定向的 HTTP 状态代码和任何其他响应标头作为第三和第四个参数传递给 to_route 方法：
+
+    return to_route('users.show', ['user' => 1], 302, ['X-Framework' => 'Laravel']);

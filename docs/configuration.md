@@ -1,117 +1,218 @@
-# Laravel 的配置信息
+# 配置
 
 - [介绍](#introduction)
 - [环境配置](#environment-configuration)
-    - [检索环境配置](#retrieving-environment-configuration)
-    - [确定当前环境](#determining-the-current-environment)
+     - [环境变量类型](#environment-variable-types)
+     - [检索环境配置](#retrieving-environment-configuration)
+     - [确定当前环境](#determining-the-current-environment)
 - [访问配置值](#accessing-configuration-values)
 - [配置缓存](#configuration-caching)
+- [调试模式](#debug-mode)
 - [维护模式](#maintenance-mode)
 
 <a name="introduction"></a>
 ## 介绍
 
-Laravel 框架的所有配置文件都保存在 `config` 目录中。 每个选项都有说明，你可随时查看这些文件并熟悉都有哪些配置选项可供你使用。
+Laravel 框架的所有配置文件都存储在 `config` 目录中。 每个选项都记录在案，因此请随意查看文件并熟悉可用的选项。
+
+这些配置文件允许您配置诸如数据库连接信息、邮件服务器信息以及各种其他核心配置值（例如应用程序时区和加密密钥）之类的内容。
 
 <a name="environment-configuration"></a>
 ## 环境配置
 
-对于应用程序运行的环境来说，不同的环境有不同的配置通常是很有用的。 例如，你可能希望在本地使用的缓存驱动不同于生产服务器所使用的缓存驱动。
+根据应用程序运行的环境设置不同的配置值通常很有帮助。 例如，您可能希望在本地使用与在生产服务器上不同的缓存驱动程序。
 
-Laravel 利用 Vance Lucas 的 PHP 库 [DotEnv](https://github.com/vlucas/phpdotenv) 使得此项功能的实现变得非常简单。在新安装好的 Laravel 应用程序中，其根目录会包含一个 `.env.example` 文件。如果是通过 Composer 安装的 Laravel，该文件会自动更名为 `.env`。否则，需要你手动更改一下文件名。
+为了让这件事变得轻而易举，Laravel 使用了 [DotEnv](https://github.com/vlucas/phpdotenv) PHP 库。 在全新的 Laravel 安装中，应用程序的根目录将包含一个 `.env.example` 文件，该文件定义了许多常见的环境变量。 在 Laravel 安装过程中，该文件会自动复制到 `.env`。
 
-你的 `.env` 文件不应该提交到应用程序的源代码控制系统中，因为每个使用你的应用程序的开发人员 / 服务器可能需要有一个不同的环境配置。此外，在入侵者获得你的源代码控制仓库的访问权的情况下，这会成为一个安全隐患，因为任何敏感的凭据都被暴露了。
+Laravel 的默认 `.env` 文件包含一些常见的配置值，这些值可能会根据您的应用程序是在本地运行还是在生产 Web 服务器上运行而有所不同。 然后使用 Laravel 的 `env` 函数从 `config` 目录中的各种 Laravel 配置文件中检索这些值。
 
-如果是团队开发，则可能希望应用程序中仍包含 ` .env.example` 文件。因为通过在示例配置文件中放置占位值，团队中的其他开发人员可以清楚地看到哪些环境变量是运行应用程序所必需的。你也可以创建一个 `.env.testing` 文件，当运行 PHPUnit 测试或以 `--env=testing` 为选项执行 Artisan 命令时，该文件将覆盖 `.env` 文件中的值。
 
-> {tip} `.env` 文件中的所有变量都可被外部环境变量（比如服务器级或系统级环境变量）所覆盖。
+
+如果您正在与团队一起开发，您可能希望继续在您的应用程序中包含一个 `.env.example` 文件。 通过将占位符值放入示例配置文件中，您团队中的其他开发人员可以清楚地看到运行您的应用程序需要哪些环境变量。
+
+> 技巧：`.env` 文件中的任何变量都可以被外部环境变量覆盖，例如服务器级或系统级环境变量。
+
+<a name="environment-file-security"></a>
+#### 环境文件安全
+
+您的 `.env` 文件不应提交给应用程序的源代码管理，因为每个使用您的应用程序的开发人员/服务器可能需要不同的环境配置。 此外，如果入侵者获得对您的源代码控制存储库的访问权限，这将是一个安全风险，因为任何敏感凭据都会被暴露。
+
+<a name="additional-environment-files"></a>
+#### 附加环境文件
+
+在加载应用程序的环境变量之前，Laravel 会确定是否已经从外部提供了 `APP_ENV` 环境变量，或者是否指定了 `--env` CLI 参数。 如果是这样，Laravel 将尝试加载一个 `.env.[APP_ENV]` 文件（如果它存在）。 如果它不存在，将加载默认的 `.env` 文件。
+
+<a name="environment-variable-types"></a>
+### 环境变量类型
+
+`.env` 文件中的所有变量通常都被解析为字符串，因此创建了一些保留值以允许您从 `env()` 函数返回更广泛的类型：
+
+`.env` Value  | `env()` Value
+------------- | -------------
+true | (bool) true
+(true) | (bool) true
+false | (bool) false
+(false) | (bool) false
+empty | (string) ''
+(empty) | (string) ''
+null | (null) null
+(null) | (null) null
+
+
+
+如果您需要使用包含空格的值定义环境变量，可以通过将值括在双引号中来实现：
+
+```ini
+APP_NAME="My Application"
+```
 
 <a name="retrieving-environment-configuration"></a>
-### 检索环境配置
+### 获取环境配置
 
-当应用程序收到请求时，`.env` 文件中列出的所有变量将被加载到 PHP 的超级全局变量 `$ _ENV` 中。你可以使用 `env` 函数检索这些变量的值。事实上，如果你查看 Laravel 的配置文件，你就能注意到有数个选项已经使用了这个函数：
+当应用程序收到请求时，```.env``` 文件中列出的所有变量将被加载到 PHP 的超级全局变量 ```$_ENV``` 中。你可以使用 ```env``` 函数检索这些变量的值。实际上，如果你看过 Laravel 的配置文件，就能注意到有数个选项已经使用了这个函数：
 
     'debug' => env('APP_DEBUG', false),
 
-传递给 `env` 函数的第二个值是「默认值」。如果给定的键不存在环境变量，则会使用该值。
+env 函数的第二个参数是「默认值」。 当没有找到对应环境变量时将返回 「默认值」
 
 <a name="determining-the-current-environment"></a>
-### 确定当前环境
+### 获取当前环境配置
 
-应用程序当前所处环境是通过 `.env` 文件中的 `APP_ENV` 变量确定的。你可以通过 `App` [facade](/docs/{{version}}/facades) 中的 `environment`  方法来访问此值：
+当前应用的环境配置是从你的  `.env` 文件中的 `APP_ENV` 变量配置的。你可以通过 `App` [facade](/docs/laravel/9.x/facades) 的 `environment` 函数获取：
+
+    use Illuminate\Support\Facades\App;
 
     $environment = App::environment();
 
-你还可以传递参数给 `environment` 方法，以检查当前的环境配置是否与给定值匹配。 如果与给定值匹配，该方法将返回 `true`：
+你还可以将参数传递给 `environment`  函数，以确定当前环境是否匹配给定的值。当环境匹配给参数它将返回  `true`
 
     if (App::environment('local')) {
-        // 环境为 local
+        // 当前环境是 local
     }
 
     if (App::environment(['local', 'staging'])) {
-        // 环境为 local 或 staging
+        // 当前环境是 local 或 staging ...
     }
 
-> {tip} 应用程序当前所处环境检测可以被服务器级的 `APP_ENV` 环境变量覆盖。这为相同的应用程序配置不同的环境时是非常有用的，这样你可以在你的服务器配置中为给定的主机设置与其匹配的给定的环境。
+> 技巧：当前应用程序的环境检测，可以通过定义服务器级`APP_ENV`环境变量来覆盖。
 
 <a name="accessing-configuration-values"></a>
 ## 访问配置值
 
-你可以轻松地在应用程序的任何位置使用全局 `config` 函数来访问配置值。配置值的访问可以使用「点」语法，这其中包含了要访问的文件和选项的名称。还可以指定默认值，如果配置选项不存在，则返回默认值：
+
+
+您可以在应用程序的任何位置使用全局 `config` 辅助函数轻松访问配置值。 可以使用“点”语法访问配置值，其中包括您希望访问的文件名和选项。 也可以指定默认值，如果配置选项不存在，将返回：
 
     $value = config('app.timezone');
 
-要在运行时设置配置值，传递一个数组给 `config` 函数：
+    // 如果配置值不存在，则检索默认值...
+    $value = config('app.timezone', 'Asia/Seoul');
+
+要在运行时设置配置值，请将数组传递给 `config` 助手：
 
     config(['app.timezone' => 'America/Chicago']);
 
 <a name="configuration-caching"></a>
 ## 配置缓存
 
-为了给你的应用程序提升速度，你应该使用 Artisan 命令 `config:cache` 将所有的配置文件缓存到单个文件中。这会把你的应用程序中所有的配置选项合并成一个单一的文件，然后框架会快速加载这个文件。
+为了提高应用程序的速度，您应该使用 `config:cache` Artisan 命令将所有配置文件缓存到一个文件中。 这会将应用程序的所有配置选项组合到一个文件中，框架可以快速加载该文件。
 
-通常来说，你应该把运行 `php artisan config:cache` 命令作为生产环境部署常规的一部分。这个命令不应在本地开发环境下运行，因为配置选项在应用程序开发过程中是经常需要被更改的。
+您通常应该在生产部署过程中运行 `php artisan config:cache` 命令。 该命令不应在本地开发期间运行，因为在应用程序开发过程中经常需要更改配置选项。
 
-> {note} 如果在部署过程中执行 `config:cache` 命令，那你应该确保只从配置文件内部调用 `env` 函数。
+> 注意：如果您在部署过程中执行 `config:cache` 命令，则应确保仅从配置文件中调用 `env` 函数。 一旦配置被缓存，`.env` 文件将不会被加载； 因此，`env` 函数只会返回外部的系统级环境变量。
+
+<a name="debug-mode"></a>
+
+
+## 调试模式
+
+`config/app.php` 配置文件中的 `debug` 选项决定了实际向用户显示的错误信息量。 默认情况下，此选项设置为尊重 `APP_DEBUG` 环境变量的值，该变量存储在您的 `.env` 文件中。
+
+对于本地开发，您应该将 `APP_DEBUG` 环境变量设置为 `true`。 **在您的生产环境中，此值应始终为 `false`。 如果在生产环境中将该变量设置为 `true`，您可能会将敏感的配置值暴露给应用程序的最终用户。**
 
 <a name="maintenance-mode"></a>
 ## 维护模式
 
-当应用程序处于维护模式时，所有对应用程序的请求都显示为一个自定义视图。这样可以在更新或执行维护时轻松地「关闭」你的应用程序。 维护模式检查包含在应用程序的默认中间件栈中。如果应用程序处于维护模式，则将抛出一个状态码为 503 的 `MaintenanceModeException` 异常。
+当您的应用程序处于维护模式时，将为您的应用程序的所有请求显示一个自定义视图。 这使得在更新或执行维护时可以轻松“禁用”您的应用程序。 维护模式检查包含在应用程序的默认中间件堆栈中。 如果应用程序处于维护模式，则会抛出一个 `Symfony\Component\HttpKernel\Exception\HttpException` 实例，状态码为 503。
 
-要启用维护模式，只需执行下面的 Artisan 命令 `down`：
+要启用维护模式，请执行 `down` Artisan 命令：
 
-    php artisan down
+```shell
+php artisan down
+```
 
-你还可以向 down 命令提供 `message` 和 `retry` 选项。其中 message 选项的值可用于显示或记录自定义消息，而 retry 值可用于设置 HTTP 请求头中 `Retry-After` 的值：
+如果您希望 `Refresh` HTTP 标头与所有维护模式响应一起发送，您可以在调用 `down` 命令时提供 `refresh` 选项。 `Refresh` 标头将指示浏览器在指定秒数后自动刷新页面：
 
-    php artisan down --message="Upgrading Database" --retry=60
+```shell
+php artisan down --refresh=15
+```
 
-要关闭维护模式，请使用 `up` 命令：
+您还可以为 `down` 命令提供 `retry` 选项，该选项将设置为 `Retry-After` HTTP 标头的值，尽管浏览器通常会忽略此标头：
 
-    php artisan up
+```shell
+php artisan down --retry=60
+```
 
-> {tip} 你可以通过修改 `resources/views/errors/503.blade.php` 模板文件来自定义默认维护模式模板。
 
-#### 维护模式和队列
 
-当应用程序处于维护模式时，不会处理 [队列任务](/docs/{{version}}/queues)。而这些任务会在应用程序退出维护模式后再继续处理。
+<a name="bypassing-maintenance-mode"></a>
+#### 绕过维护模式
 
+即使在维护模式下，您也可以使用 `secret` 选项来指定维护模式绕过令牌：
+
+```shell
+php artisan down --secret="1630542a-246b-4b66-afa1-dd72a4c43515"
+```
+
+将应用程序置于维护模式后，您可以导航到与此令牌匹配的应用程序 URL，Laravel 将向您的浏览器发出维护模式绕过 cookie：
+
+```shell
+https://example.com/1630542a-246b-4b66-afa1-dd72a4c43515
+```
+
+访问此隐藏路由时，您将被重定向到应用程序的 `/` 路由。 将 cookie 发送到您的浏览器后，您将能够正常浏览应用程序，就好像它未处于维护模式一样。
+
+> 技巧：维护模式 `secret` 通常应由字母数字字符和破折号`-`组成。您应该避免在 URL 中使用具有特殊含义的字符，例如 `?`。
+
+<a name="pre-rendering-the-maintenance-mode-view"></a>
+#### 预渲染维护模式视图
+
+如果您在部署期间使用 `php artisan down` 命令，如果您的用户在您的 Composer 依赖项或其他基础架构组件更新时访问应用程序，他们仍可能偶尔会遇到错误。 这是因为 Laravel 框架的重要部分必须启动才能确定您的应用程序处于维护模式并使用模板引擎呈现维护模式视图。
+
+出于这个原因，Laravel 允许您预渲染一个维护模式视图，该视图将在请求周期的最开始返回。 此视图在您的应用程序的任何依赖项加载之前呈现。 您可以使用 `down` 命令的 `render` 选项预渲染您选择的模板：
+
+```shell
+php artisan down --render="errors::503"
+```
+
+
+
+<a name="redirecting-maintenance-mode-requests"></a>
+#### 重定向维护模式请求
+
+在维护模式下，Laravel 将显示用户尝试访问的所有应用程序 URL 的维护模式视图。 如果你愿意，你可以指示 Laravel 将所有请求重定向到一个特定的 URL。 这可以使用 `redirect` 选项来完成。 例如，您可能希望将所有请求重定向到 `/` URI：
+
+```shell
+php artisan down --redirect=/
+```
+
+<a name="disabling-maintenance-mode"></a>
+#### 禁用维护模式
+
+要禁用维护模式，请使用 `up` 命令：
+
+```shell
+php artisan up
+```
+
+> 技巧：您可以通过在 `resources/views/errors/503.blade.php` 中定义自己的模板来自定义默认维护模式模板。
+
+<a name="maintenance-mode-queues"></a>
+#### 维护模式 & 队列
+
+当您的应用程序处于维护模式时，将不会处理任何 [排队作业](/docs/laravel/9.x/queues)。 一旦应用程序退出维护模式，作业将继续正常处理。
+
+<a name="alternatives-to-maintenance-mode"></a>
 #### 维护模式的替代方案
 
-维护模式会导致应用程序有数秒的停机（不响应）时间，因此你可以考虑使用像 [Envoyer](https://envoyer.io) 这样的替代方案，以便与 Laravel 完成零停机时间部署。
-
-## 译者署名
-| 用户名 | 头像 | 职能 | 签名 |
-| --- | --- | --- | --- |
-| [@痛饮狂歌](https://learnku.com/users/7636) | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/7636_1500076845.png?imageView2/1/w/100/h/100"> | 翻译 | 独立开发者，全栈工程师 |
-| [@JokerLinly](https://learnku.com/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  |  Review  | Stay Hungry. Stay Foolish. |
-
-
-
----
-
->
-> 转载请注明：本文档由 LearnKu 技术论坛 [learnku.com](https://learnku.com) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
->
-> 文档原地址： https://learnku.com/docs/laravel/9.x
+由于维护模式要求您的应用程序有几秒钟的停机时间，因此请考虑使用 [Laravel Vapor](https://vapor.laravel.com) 和 [Envoyer](https://envoyer.io) 等替代方案来完成零停机部署 与 Laravel。

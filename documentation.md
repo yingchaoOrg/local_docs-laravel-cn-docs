@@ -3,13 +3,12 @@
     - [发行说明](/docs/releases)
     - [升级说明](/docs/upgrade)
     - [贡献导引](/docs/contributions)
-    - [API 文档](/api/{{version}})
+    - [API 文档]()
 - ## 入门指南
     - [安装](/docs/installation)
     - [配置信息](/docs/configuration)
     - [文件夹结构](/docs/structure)
-    - [Homestead](/docs/homestead)
-    - [Valet](/docs/valet)
+    - [入门套件](/docs/starter-kits)
     - [部署](/docs/deployment)
 - ## 核心架构
     - [请求周期](/docs/lifecycle)
@@ -29,6 +28,8 @@
     - [Session](/docs/session)
     - [表单验证](/docs/validation)
     - [错误与日志](/docs/errors)
+    - [日志](/docs/logging)
+    - [Vite 编译 Assets](/docs/laravel-vite-compiles-assets)
 - ## 前端开发
     - [Blade 模板](/docs/blade)
     - [本地化](/docs/localization)
