@@ -38,6 +38,7 @@
     - [用户认证](/docs/authentication)
     - [API 认证](/docs/passport)
     - [用户授权](/docs/authorization)
+    - [Email 认证](/docs/verification)
     - [加密解密](/docs/encryption)
     - [哈希](/docs/hashing)
     - [重置密码](/docs/passwords)
@@ -56,7 +57,7 @@
     - [任务调度](/docs/scheduling)
 - ## 数据库
     - [快速入门](/docs/database)
-    - [查询构造器](/docs/queries)
+    - [查询构造器](/docs/database-queries)
     - [分页](/docs/pagination)
     - [数据库迁移](/docs/migrations)
     - [数据填充](/docs/seeding)

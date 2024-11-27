@@ -1,357 +1,433 @@
-# Laravel 的资源任务编译器 Laravel Mix
+# 编译前端资源（Mix）
 
 - [简介](#introduction)
-- [安装 & 配置](#installation)
+- [安装 & 设置](#installation)
 - [运行 Mix](#running-mix)
-- [使用样式](#working-with-stylesheets)
-    - [Less](#less)
-    - [Sass](#sass)
-    - [Stylus](#stylus)
+- [使用样式表](#working-with-stylesheets)
+    - [Tailwind CSS](#tailwindcss)
     - [PostCSS](#postcss)
-    - [纯 CSS](#plain-css)
+    - [Sass](#sass)
     - [URL 处理](#url-processing)
     - [资源映射](#css-source-maps)
 - [使用 JavaScript](#working-with-scripts)
-    - [提取 Vendor](#vendor-extraction)
-    - [React](#react-support)
-    - [原生 JS](#vanilla-js)
+    - [Vue](#vue)
+    - [React](#react)
+    - [Vendor 提取](#vendor-extraction)
     - [自定义 Webpack 配置](#custom-webpack-configuration)
-- [复制文件 & 目录](#copying-files-and-directories)
-- [版本控制 & 缓存清除](#versioning-and-cache-busting)
+- [版本控制 / 缓存清除](#versioning-and-cache-busting)
 - [Browsersync 重新加载](#browsersync-reloading)
 - [环境变量](#environment-variables)
 - [通知](#notifications)
 
-
 <a name="introduction"></a>
 ## 简介
 
-Laravel Mix 提供了简介且可读性高的 API，用于使用几个常见的 CSS 和 JavaScript 预处理器为应用定义 Webpack 构建步骤。可以通过简单链式调用来定义资源的编译。例如：
+[Laravel Mix](https://github.com/laravel-mix/laravel-mix) 是一个由 [Laracasts](https://laracasts.com) 所开发的拓展包，作者 Jeffrey Way 。其使用了常见的 CSS 和 JavaScript 预处理器，为定义 [webpack](https://webpack.js.org) 构建步骤提供了流畅的 API。
 
-    mix.js('resources/assets/js/app.js', 'public/js')
-        .sass('resources/assets/sass/app.scss', 'public/css');
+换句话说，Mix 使您可以轻松地编译和压缩应用程序中的 CSS 和 JavaScript 文件。通过链式调用这些简洁方法，可以流畅地定义资源管道。例如：
 
-如果你曾经对于使用 Webpack 及编译资源感到困惑和不知所措，那么你会爱上 Laravel Mix。当然，Laravel 也并没有强迫你一定要使用 Mix，你可以自由使用任何你喜欢的资源编译工具，或者不用也行。
+```js
+mix.js('resources/js/app.js', 'public/js')
+    .postCss('resources/css/app.css', 'public/css');
+```
+
+如果您曾经对使用 Webpack 和资源编译感到困惑和不知所措，那么你一定会喜欢 Laravel Mix。但你不一定非要使用它来开发应用，你可以使用你喜欢的任何资源管道工具，甚至干脆不用。
+
+> 技巧：如果您需要先开始使用 Laravel 和 [Tailwind CSS](https://tailwindcss.com) 构建应用程序，请查看我们的 [应用程序入门工具包](/docs/laravel/9.x/starter-kits)。
 
 <a name="installation"></a>
 ## 安装 & 配置
 
+<a name="installing-node"></a>
+
+
 #### 安装 Node
 
-在开始使用 Mix 之前，必须先确保你的机器上安装了 Node.js 和 NPM。
+在运行 Mix 之前，要先确保您的机器上已经安装了 Node.js 和 NPM：
 
-    node -v
-    npm -v
+```shell
+node -v
+npm -v
+```
 
-默认情况下，Laravel Homestead 会包含你所需的一切。当然，如果你没有使用 Vagrant，就使用简单的图形安装程序从 [其下载页面](https://nodejs.org/en/download/) 安装最新版的 Node 和 NPM。
+您可以从 [Node 官网](https://nodejs.org/en/download/) 使用图形化安装器轻松安装最新版本的  Node 和 NPM。或者，如果您使用的是 [Laravel Sail](/docs/laravel/9.x/sail) 则可以通过  Sail 调用 Node 和 NPM：
 
-#### Laravel Mix
+```shell
+./sail node -v
+./sail npm -v
+```
 
-然后就只需要安装 Laravel Mix。在新的 Laravel 项目中，你可以在目录结构的根目录中找到一个 `package.json` 文件，它包括了运行基本的 Mix 所需的内容。就如同 `composer.json` 文件，只不过它定义的是 Node 的依赖而不是 PHP。你可以使用以下的命令安装它引用的依赖项：
+<a name="installing-laravel-mix"></a>
+#### 安装 Laravel Mix
 
-    npm install
-如果你正在 Windows 系统上进行开发，或者在 Windows 主机系统上运行虚拟机，那你要在运行 `npm install` 命令时使用 `--no-bin-links`：
+剩下的事就是安装 Laravel Mix。在全新安装的 Laravel 中，您会在应用目录结构的根目录中找到 `package.json` 文件。 默认的 `package.json` 包含了使用 Laravel Mix 所需要的所有东西。 您可以把它想象成为 `composer.json` 文件，只是它定义的是 Node 依赖而不是 PHP 依赖。您可以像这样来安装依赖：
 
-    npm install --no-bin-links
+```shell
+npm install
+```
 
 <a name="running-mix"></a>
 ## 运行 Mix
 
-Mix 是位于 [Webpack](https://webpack.js.org) 顶部的配置层，所以要运行 Mix 任务，只需要执行默认的Laravel `package.json` 文件中包含的一个 NPM 脚本：
+Mix 是 [webpack](https://webpack.js.org) 的顶层配置，因此如果您要执行 Mix 任务，您只需要执行一条被包含于 Laravel 默认的 `package.json` 文件中的 NPM 脚本。当您运行 `dev` 或 `production` 脚本时， 应用程序的所有 CSS 和 JavaScript 资源文件都将被编译并放置在应用程序的 `public` 目录中：
 
-    // 运行所有 Mix 任务...
-    npm run dev
+```shell
+// 运行所有的 Mix 任务…
+npm run dev
 
-    // 运行所有 Mix 任务并缩小输出..
-    npm run production
+// 运行所有的 Mix 任务并最小化输出…
+npm run prod
+```
 
-#### 监控资源文件修改
+<a name="watching-assets-for-changes"></a>
+#### 监听静态资源的变化
 
-`npm run watch` 会在你的终端里持续运行，监控所有相关的资源文件以便进行更改。Webpack 会在检测到文件更改时自动重新编译资源：
 
 
-    npm run watch
-在某些环境中，当文件更改时，Webpack 不会更新。如果系统出现这种情况，请考虑使用 `watch-poll` 命令：
+`npm run watch` 命令将会在您的终端中持续运行，并监听所有相关的 CSS 和 JavaScript 文件的修改。当发现文件有任何改动时， Webpack 将会自动重新编译它们：
 
-    npm run watch-poll
+```shell
+npm run watch
+```
+
+您会发现在特定的环境下， 文件的修改并不会触发 Webpack 的更新。如果在您的系统中发生了这样的事，您可以考虑使用 `watch-poll` 命令:
+
+```shell
+npm run watch-poll
+```
 
 <a name="working-with-stylesheets"></a>
-## 使用样式
+## 使用样式表
 
-`webpack.mix.js` 文件是所有资源编译的入口点。可以把它看作是 Webpack 中的轻量级配置封装清单。Mix 任务可以一起被链式调用，以精确定义资源的编译方式。
+`webpack.mix.js` 是所有静态资源编译的入口。 您可以将其看成是 [webpack](https://webpack.js.org) 的轻量配置封装。Mix 任务能够与定义了静态资源的编译方式的配置一起被链式调用。
 
-<a name="less"></a>
-### Less
+<a name="tailwindcss"></a>
+### Tailwind CSS
 
-`less` 方法可以用于将 [Less](http://lesscss.org/) 编译为 CSS。在 `webpack.mix.js` 中这样写，可以将 `app.less` 编译到 `public/css/app.css` 中。
+[Tailwind CSS](https://tailwindcss.com) 是一种实用程序优先的现代框架，可在不离开 HTML 的情况下构建出色的网站。让我们研究一下如何在 Laravel Mix 的 Laravel 项目中开始使用它。首先，我们应该使用 NPM 安装 Tailwind 并生成我们的 Tailwind 配置文件：
 
-    mix.less('resources/assets/less/app.less', 'public/css');
+```shell
+npm install
 
-可以多次调用 `less` 方法来编译多个文件:
+npm install -D tailwindcss
 
-    mix.less('resources/assets/less/app.less', 'public/css')
-       .less('resources/assets/less/admin.less', 'public/css');
+npx tailwindcss init
+```
 
-如果要自定义编译的 CSS 的文件名，可以将一个完整的路径作为第二个参数传给 `less` 方法:
+ `init` 命令将生成一个 `tailwind.config.js` 文件。该文件的 `content` 部分允许您配置所有 HTML 模板、JavaScript 组件和任何其他包含 Tailwind 类名称的源文件的路径，以便 Tailwind 在优化生产环境中的 CSS 时，可以削减未使用的样式：
 
-    mix.less('resources/assets/less/app.less', 'public/stylesheets/styles.css');
+```js
+content: [
+    './storage/framework/views/*.php',
+    './resources/**/*.blade.php',
+    './resources/**/*.js',
+    './resources/**/*.vue',
+],
+```
 
-如果你需要重写 [底层 Less 插件选项](https://github.com/webpack-contrib/less-loader#options)，你可以将一个对象作为第三个参数传到 `mix.less()`：
 
-    mix.less('resources/assets/less/app.less', 'public/css', {
-        strictMath: true
-    });
 
-<a name="sass"></a>
-### Sass
+接下来，您应该将 Tailwind 的每个「层」添加到应用中的 `resources/css/app.css` 文件：
 
-`sass` 方法可以将 [Sass](http://sass-lang.com/) 编译为 CSS。用法如下所示：
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
 
-    mix.sass('resources/assets/sass/app.scss', 'public/css');
+配置 Tailwind 的层后，请更新应用中的 `webpack.mix.js` 文件，如此便可编译 Tailwind 支持的 CSS：
 
-跟 `less` 方法一样，你可以将多个 Sass 文件编译到各自的 CSS 文件中，甚至可以自定义生成的 CSS 的输出目录：
+```js
+mix.js('resources/js/app.js', 'public/js')
+    .postCss('resources/css/app.css', 'public/css', [
+        require('tailwindcss'),
+    ]);
+```
 
-    mix.sass('resources/assets/sass/app.sass', 'public/css')
-       .sass('resources/assets/sass/admin.sass', 'public/css/admin');
+最后，您应当在应用的主布局模板中引用您的样式表。很多应用都将该模板存储于 `resources/views/layouts/app.blade.php` 中。此外，如果它还未正常显示，请确保您已经添加了 `meta` 标签：
 
-另外，[Node-Sass 插件选项](https://github.com/sass/node-sass#options) 也同样可以作为第三个参数：
-
-    mix.sass('resources/assets/sass/app.sass', 'public/css', {
-        precision: 5
-    });
-
-<a name="stylus"></a>
-### Stylus
-
-类似于 Less 和 Sass，`stylus` 方法可以将 [Stylus](http://stylus-lang.com/) 编译为 CSS：
-
-    mix.stylus('resources/assets/stylus/app.styl', 'public/css');
-
-你也可以安装其他的 Stylus 插件，例如 [Rupture](https://github.com/jescalan/rupture)。首先，通过 NPM (`npm install rupture`) 来安装插件，然后在调用 `mix.stylus()` 时引用它：
-
-    mix.stylus('resources/assets/stylus/app.styl', 'public/css', {
-        use: [
-            require('rupture')()
-        ]
-    });
+```blade
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="/css/app.css" rel="stylesheet">
+</head>
+```
 
 <a name="postcss"></a>
 ### PostCSS
 
-Laravel Mix 自带了一个用来转换 CSS 的强大工具 [PostCSS](http://postcss.org/)。默认情况下， Mix 利用了流行的 [Autoprefixer](https://github.com/postcss/autoprefixer) 插件来自动添加所需要的 CSS3 浏览器引擎前缀。不过，你也可以自由添加任何适合你应用程序的插件。首先，通过 NPM 安装所需的插件，然后在 `webpack.mix.js` 文件中引用它：
+[PostCSS](https://postcss.org/) 是一个强大的工具，它可以转换您的 CSS ，它已经包含在 Laravel Mix 中，并可开箱即用。默认情况下，Mix 利用流行的 [Autoprefixer](https://github.com/postcss/autoprefixer) 插件来自动附加所有必要的 CSS3 前缀。当然，您亦可自由地添加任何应用所需的附加组件。
 
-    mix.sass('resources/assets/sass/app.scss', 'public/css')
-       .options({
-            postCss: [
-                require('postcss-css-variables')()
-            ]
-       });
+首先，通过 NPM 安装所需的插件。然后，在调用 Mix 的 `postCss` 方法的时候，将其添加到您的插件数组中。 `postCss` 方法的第一个参数为 CSS 文件的路径，第二个参数为编译后的文件的位置路径：
 
-<a name="plain-css"></a>
-### 纯 CSS
+```js
+mix.postCss('resources/css/app.css', 'public/css', [
+    require('postcss-custom-properties')
+]);
+```
 
-如果你只是想将一些纯 CSS 样式合并成单个的文件, 你可以使用 `styles` 方法。
+或者，为了实现简单的 CSS 的编译和压缩，您可以在不使用其他插件的情况下执行 `postCss` :
 
-    mix.styles([
-        'public/css/vendor/normalize.css',
-        'public/css/vendor/videojs.css'
-    ], 'public/css/all.css');
+```js
+mix.postCss('resources/css/app.css', 'public/css');
+```
+
+
+
+<a name="sass"></a>
+### Sass
+
+`sass` 方法允许您将 [Sass](https://sass-lang.com/) 编译成 Web 浏览器可以理解的 CSS 文件。`sass` 方法的第一个参数是您的 Sass 文件的路径，第二个参数是编译后的文件的存储路径：
+
+```js
+mix.sass('resources/sass/app.scss', 'public/css');
+```
+
+您可以将多个 Sass 文件编译成各自的 CSS 文件，甚至可以通过多次调用 `sass` 方法来自定义生成的 CSS 的输出目录：
+
+```js
+mix.sass('resources/sass/app.sass', 'public/css')
+    .sass('resources/sass/admin.sass', 'public/css/admin');
+```
 
 <a name="url-processing"></a>
 ### URL 处理
 
-由于 Laravel Mix 是建立在 Webpack 之上的，所以了解一些 Webpack 概念就非常有必要。编译 CSS 的时候，Webpack 会重写和优化样式表中对 `url()` 的调用。 一开始听起来可能会觉得奇怪，但这确实是一个非常强大的功能。试想一下我们要编译一个包含图片的相对路径的 Sass 文件:
+因为 Laravel Mix 是基于 Webpack 之上构建的，所以了解几个 webpack 的概念就很重要了。对于 CSS 编译，webpack 将会重写和优化在样式表中的任何 `url()` 调用。虽然初听起来很奇怪，但这确实是一个很强大的功能。想象一下我们想要编译包含图片相对 URL 的 Sass：
 
-    .example {
-        background: url('../images/example.png');
-    }
+```css
+.example {
+    background: url('../images/example.png');
+}
+```
 
-> {note} 任何给定 `url()` 的绝对路径会被排除在 URL 重写之外。例如 `url('/images/thing.png')` 或者 `url('http://example.com/images/thing.png')` 不会被修改。
+> 注意：任何给定 `url()` 的绝对路径将被排除在 URL 重写之外。例如， `url('/images/thing.png')` 或 `url('http://example.com/images/thing.png')` 将不会作任何修改。
 
-默认情况下，Laravel Mix 和 Webpack 会找到 `example.png`，然后把它复制到你的 `public/images` 目录下，然后重写生成的样式中的  `url()`。这样，你编译之后的 CSS 会变成：
+默认情况下，Laravel Mix 和 Webpack 将会寻找到 `example.png`，并将其复制到您的 `public/images` 文件夹中，然后重写生成的样式表中的 `url()` 。如此一来，编译后的 CSS 将变为：
 
-    .example {
-      background: url(/images/example.png?d41d8cd98f00b204e9800998ecf8427e);
-    }
-
-但如果你想以你喜欢的方式配置现有的文件夹结构，可以禁用 `url()` 的重写：
-
-    mix.sass('resources/assets/app/app.scss', 'public/css')
-       .options({
-          processCssUrls: false
-       });
-
-在你的 `webpack.mix.js` 文件像上面这样配置之后，Mix 将不再匹配 `url()` 或者将资源复制到你的 public 目录。换句话说，编译后的 CSS 会跟原来输入的一样：
-
-    .example {
-        background: url("../images/thing.png");
-    }
+```css
+.example {
+    background: url(/images/example.png?d41d8cd98f00b204e9800998ecf8427e);
+}
+```
 
 <a name="css-source-maps"></a>
-### 资源映射
+### 源码映射
 
-默认情况下资源映射是禁用的，可以在 `webpack.mix.js` 文件中调用 `mix.sourceMaps()` 方法来开启它。尽管它会带来一些编译／性能的成本，但在使用编译资源时，可以为使用浏览器的开发人员工具提供额外的调试信息：
+Source map 默认是关闭的，你可以在 `webpack.mix.js` 文件中调用 `mix.sourceMaps()` 方法来打开 Source map 功能。尽管这会给前端编译带来一些性能负担，但是在使用浏览器调试时就会很方便找到对应的代码:
 
-    mix.js('resources/assets/js/app.js', 'public/js')
-       .sourceMaps();
+```js
+mix.js('resources/js/app.js', 'public/js')
+    .sourceMaps();
+```
+
+<a name="style-of-source-mapping"></a>
+#### 源码映射样式
+
+Webpack 提供了多种 [源码映射样式](https://webpack.js.org/configuration/devtool/#devtool)。在默认情况下 Mix 的源码映射使用 `eval-source-map`模式，它快速构建非常快。 如果你想更改映射样式可以使用 `sourceMaps` 方法:
+
+```js
+let productionSourceMaps = false;
+
+mix.js('resources/js/app.js', 'public/js')
+    .sourceMaps(productionSourceMaps, 'source-map');
+```
 
 <a name="working-with-scripts"></a>
-## 使用脚本
+## 使用 JavaScript
 
-Mix 提供了一些函数来处理 JavaScript 文件，像是编译 ECMAScript 2015、模块绑定、压缩以及简单地合并纯 JavaScript 文件。更棒的是，这些操作都不需要进行任何自定义的配置：
+Mix 提供了多种功能来帮助您处理 JavaScript 文件，例如编译最新的 ECMAScript 语法，模块化，代码压缩和合并 JavaScript 文件。更棒的是，所有这些都可以无缝运行，而无需大量的自定义配置:
 
-    mix.js('resources/assets/js/app.js', 'public/js');
+```js
+mix.js('resources/js/app.js', 'public/js');
+```
 
-仅仅这上面的一行代码，就支持：
 
-<div class="content-list" markdown="1">
-- ES 2015 语法
-- 模块
-- 编译 `.vue` 文件
-- 生产环境压缩代码
-  </div>
 
-<a name="vendor-extraction"></a>
-### 提取依赖库
-
-将应用程序特定的 JavaScript 与依赖库捆绑在一起有个潜在的缺点，会使得长期缓存更加困难。例如，即使应用程序使用的依赖库没有被更改，只要有代码被单独更新，都会强制浏览器重新下载所有依赖库。
-
-如果你打算频繁更新应用程序的 JavaScript，应该考虑将所有的依赖库提取到自己的文件中。如此一来，应用程序代码的更改就不会影响到大型 `vendor.js` 文件的缓存。而 Mix 的 `extract` 方法能使之变得轻而易举：
-
-    mix.js('resources/assets/js/app.js', 'public/js')
-       .extract(['vue'])
-
-`extract` 方法接受一个数组参数。这个数组是要提取到 `vendor.js` 文件中的所有的依赖库或模块。比如上面的例子中，Mix 将生成以下文件：
+通过这一行代码，你现在就可以实现：
 
 <div class="content-list" markdown="1">
-- `public/js/manifest.js`: *Webpack 运行的内容清单*
-- `public/js/vendor.js`: *依赖库*
-- `public/js/app.js`: *应用代码*
-  </div>
 
-为了避免 `JavaScript` 报错，请务必按正确的顺序加载这些文件：
+- 支持最新的 EcmaScript 语法
+- 支持模块化开发
+- 在生产环境的代码压缩最小化
 
-    <script src="/js/manifest.js"></script>
-    <script src="/js/vendor.js"></script>
+</div>
+
+<a name="vue"></a>
+### Vue
+
+当使用 `vue` 方法时，Mix 会自动安装编译 Vue 组件所需要的 Babel 插件。 不需要其他任何配置。
+
+```js
+mix.js('resources/js/app.js', 'public/js')
+   .vue();
+```
+
+编译 JavaScript 后，您可以在应用程序中引用它:
+
+```blade
+<head>
+    <!-- ... -->
+
     <script src="/js/app.js"></script>
+</head>
+```
 
 <a name="react"></a>
 ### React
 
-Mix 可以自动安装 Babel 插件来支持 React。你只需将 `mix.js()` 的调用替换成 `mix.react()` 即可：
+Mix 可以自动安装 React 支持所需的 Babel 插件。 首先，请添加一个对 `react` 方法的调用：
 
-    mix.react('resources/assets/js/app.jsx', 'public/js');
+```js
+mix.js('resources/js/app.jsx', 'public/js')
+   .react();
+```
 
-React 会在后台自动下载，其中包括对应版本的 `babel-preset-react` Babel 插件。
+Mix 将在后台下载并包含相应的 `babel-preset-react` Babel  插件。编译 JavaScript 后，您可以在应用程序中引用它：
 
-<a name="vanilla-js"></a>
-### 原生 JS
+```blade
+<head>
+    <!-- ... -->
 
-类似使用 `mix.styles()` 来合并多个样式表一样，你也可以使用 `scripts()` 方法来合并并压缩多个 JavaScript 文件：
+    <script src="/js/app.js"></script>
+</head>
+```
 
-    mix.scripts([
-        'public/js/admin.js',
-        'public/js/dashboard.js'
-    ], 'public/js/all.js');
+<a name="vendor-extraction"></a>
+### 提取 Vendor
 
-这个选项对于不需要为 JavaScript 编写 Webpack 的旧项目非常有用。
+将应用程序本身所有的 JavaScript 与 vendor 库（例如 React 和 Vue ）捆绑在一起的潜在缺点是：这会使长期缓存变得更加困难。 例如，对应用程序代码进行一次更新将迫使浏览器重新下载所有 vendor 库，即使它们没有更改。
 
-> {tip} `mix.scripts()` 的一个微小变化是 `mix.babel()`。其方法签名与 `scripts` 一样。不过，连接的文件会经过 Babel 编译，将所有 ES2015 的代码转换为所有浏览器都能识别的原生 JavaScript。
+如果打算频繁更新应用程序的 JavaScript，则应考虑将所有 vender 库提取到它们自己的文件中。 这样，对应用程序代码的更改将不会影响大型 `vendor.js` 文件的缓存。 Mix 的  `extract` 方法使这变得轻而易举：
+
+```js
+mix.js('resources/js/app.js', 'public/js')
+    .extract(['vue'])
+```
+
+
+
+`extract` 方法接受你希望提取到 `vendor.js` 文件中的所有库或模块的数组。 以上面的代码段为例，Mix 将生成以下文件：
+
+<div class="content-list" markdown="1">
+
+- `public/js/manifest.js`: *Webpack 运行时清单*
+- `public/js/vendor.js`: *vendor 库*
+- `public/js/app.js`: *你的应用程序代码*
+
+</div>
+
+为避免 JavaScript 错误，请确保以正确的顺序加载这些文件:
+
+```html
+<script src="/js/manifest.js"></script>
+<script src="/js/vendor.js"></script>
+<script src="/js/app.js"></script>
+```
 
 <a name="custom-webpack-configuration"></a>
 ### 自定义 Webpack 配置
 
-Laravel Mix 会在后台引用一个预先配置的 `webpack.config.js` 文件，以提供启动和运行的速度。如果你需要引用特殊的加载程序或插件，或者你更喜欢使用 Stylus 而不是 Sass。在这种情况下，你可能需要手动修改此文件，那么你有两个选择：
+有时候你可能需要手动修改 Webpack 配置，例如，你可能需要引入特殊的 `loader` 或者插件。
 
-#### 合并自定义配置
+Mix 提供非常有用的 `webpackConfig` 方法可以让你覆盖 Webpack 的配置。这非常吸引人，因为它不需要你复制和维护自己的 `webpack.config.js` 文件。 `webpackConfig` 方法接收一个对象你可以传入你希望的 [Webpack 特定配置](https://webpack.js.org/configuration/) 。
 
-Mix 提供了一个 `webpackConfig` 方法来合并任何 `Webpack` 配置以覆盖默认配置。因此你不需要复制和维护 `webpack.config.js` 的文件副本。`webpackConfig` 方法接受一个包含任何要应用的 [Webpack 配置项](https://webpack.js.org/configuration/) 的对象：
-
-    mix.webpackConfig({
-        resolve: {
-            modules: [
-                path.resolve(__dirname, 'vendor/laravel/spark/resources/assets/js')
-            ]
-        }
-    });
-
-#### 自定义配置文件
-
-如果想完全自定义 Webpack 配置，就将 `node_modules/laravel-mix/setup/webpack.config.js` 文件复制到项目的根目录。然后在 `package.json` 文件中将所有 `--config` 的值指向新复制的配置文件。采用这种方法进行自定义，如果后续 Mix 版本有更新时，需要手动合并 `webpack.config.js` 并到你的自定义文件中。
-
-<a name="copying-files-and-directories"></a>
-## 复制文件 & 目录
-
-`copy` 方法用于将文件和目录复制到新位置。当 `node_modules` 目录中的特定资源需要被重定位到 `public` 文件夹时会很有用。
-
-    mix.copy('node_modules/foo/bar.css', 'public/css/bar.css');
-复制目录时，`copy` 方法会平面化目录的结构。要维护目录的原始结构，应该使用 `copyDirectory` 方法：
-
-    mix.copyDirectory('assets/img', 'public/img');
+```js
+mix.webpackConfig({
+    resolve: {
+        modules: [
+            path.resolve(__dirname, 'vendor/laravel/spark/resources/assets/js')
+        ]
+    }
+});
+```
 
 <a name="versioning-and-cache-busting"></a>
-## 版本控制／缓存清除
+## 版本管理 / 缓存销毁
 
-许多的开发者会对其编译的资源文件中加上时间戳或是唯一的令牌作为后缀，以此来强迫浏览器加载全新的资源文件，而不是旧版本的代码副本。你可以使用 Mix 的 `version` 方法处理它们。
+许多开发者在他们编译后的资源添加时间戳或唯一令牌作后缀，强制浏览器加载新的资源，以替换旧的代码副本。Mix 可以使用 `version` 方法替你处理它们。
 
-`version` 方法会自动为所有编译文件的文件名附加一个唯一的哈希值，从而实现更方便的缓存清除功能：
+`version` 方法自动在所有编译后的文件名后追加唯一的哈希值，从而实现更方便的缓存销毁：
 
-    mix.js('resources/assets/js/app.js', 'public/js')
-       .version();
+```js
+mix.js('resources/js/app.js', 'public/js')
+    .version();
+```
 
-生成版本化文件后，你不会知道确切的文件名。因此，你应该在你的视图中使用 Laravel 的全局辅助函数 `mix` 来正确加载名称被哈希后的文件。`mix` 函数会自动确定被哈希的文件名称：
 
-    <link rel="stylesheet" href="{{ mix('/css/app.css') }}">
 
-因为在开发中通常是不需要版本化，你可以指示版本控制过程仅在 `npm run production` 运行期间进行：
+在生成版本化文件后，你不会知道确切的文件名。因此，你需要在 [视图](/docs/laravel/9.x/views) 中使用Laravel 的全局 `mix` 函数载入相应的哈希资源。 `mix` 函数自动判断哈希文件的当前文件名：
 
-    mix.js('resources/assets/js/app.js', 'public/js');
+```blade
+<script src="{{ mix('/js/app.js') }}"></script>
+```
 
-    if (mix.inProduction()) {
-        mix.version();
-    }
+通常在开发阶段不需要版本化文件，你可以仅在运行 `npm run prod` 时执行版本化处理：
+
+```js
+mix.js('resources/js/app.js', 'public/js');
+
+if (mix.inProduction()) {
+    mix.version();
+}
+```
+
+<a name="custom-mix-base-urls"></a>
+#### 自定义 Mix Base URLs
+
+如果你的 Mix 编译资产被部署到独立于应用程序的 CDN 上，则需要更改 `mix` 函数生成的基本 URL 。 你可以通过在 `config/app.php` 中添加一个 `mix_url` 配置选项来做到这一点。php 的配置文件:
+
+    'mix_url' => env('MIX_ASSET_URL', null)
+
+在配置了 Mix URL 之后，`mix` 函数将在生成资产 URL 时为所配置的 URL 添加前缀:
+
+```shell
+https://cdn.example.com/js/app.js?id=1964becbdd96414518cd
+```
 
 <a name="browsersync-reloading"></a>
-## Browsersync 重新加载
+## Browsersync 重加载
 
-[BrowserSync](https://browsersync.io/) 可以自动监控你的文件变化，并将更改注入浏览器，而无需手动刷新。你可以通过调用 `mix.browserSync()` 方法来启用这个功能的支持：
+[BrowserSync](https://browsersync.io/) 能够自动监测文件变化，并且无需手动刷新就将变化注入到浏览器。可以调用 `mix.browserSync()` 方法开启此项支持：
 
-    mix.browserSync('my-domain.dev');
+```js
+mix.browserSync('laravel.test');
+```
 
-    // 或者...
+可以将 [BrowserSync 选项](https://browsersync.io/docs/options) 通过 Javascript 对象传递给 `browserSync` 方法来指定:
 
-    // https://browsersync.io/docs/options
-    mix.browserSync({
-        proxy: 'my-domain.dev'
-    });
+```js
+mix.browserSync({
+    proxy: 'laravel.test'
+});
+```
 
-你可以将字符串 (代理) 或者对象 (BrowserSync 设置) 传给这个方法。再使用 `npm run watch` 命令来开启 Webpack 的开发服务器。现在，当你修改脚本或者 PHP 文件时，浏览器会即时刷新页面以响应你的更改。
+然后使用 `npm run watch` 命令启动 Webpack 的开发服务器。再编辑脚本或者 PHP 文件，就会看到浏览器立即刷新以响应你的修改。
+
+
 
 <a name="environment-variables"></a>
 ## 环境变量
 
-你可以通过使用 `MIX_` 在 `.env` 文件中增加前缀来将环境变量注入到 Mix 中：
+你可以通过在 `.env` 文件中添加 `MIX_` 前缀，将环境变量注入到 Mix：
 
-    MIX_SENTRY_DSN_PUBLIC=http://example.com
-在 `.env` 文件中定义变量之后，可以通过 `process.env` 对象进行访问。如果在运行 `watch` 任务时需要更改这个值，则需要重新启动`watch` 任务：
+```ini
+MIX_SENTRY_DSN_PUBLIC=http://example.com
+```
 
-    process.env.MIX_SENTRY_DSN_PUBLIC
+如果你在 `.env` 文件中定义了变量的话，你可以通过  `process.env` 对象来访问它。 但如果你在任务运行的时候修改了变量的值，你就需要重新启动任务了:
+
+```js
+process.env.MIX_SENTRY_DSN_PUBLIC
+```
 
 <a name="notifications"></a>
 ## 通知
 
-正常情况下，Mix 会将每个包的编译的编译结果以系统通知的方式反馈给你。如果你希望停用这些通知（比如在生产服务器上使用了 Mix），可以通过 `disableNotifications` 方法实现：​
-    mix.disableNotifications();
+如果系统支持 Mix ， 将在编译时自动显示操作系统通知，为您提供有关编译是否成功的及时反馈。但是在某些情况下，您可能希望禁用这些通知。 比如在生产服务器上。禁用通知可以使用 `disableNotifications` 方法:
 
-## 译者署名
-| 用户名 | 头像 | 职能 | 签名 |
-|---|---|---|---|
-| [@zyxcba](https://github.com/cmzz) | <img class="avatar-66 rm-style" src="https://avatars3.githubusercontent.com/u/6111715?v=3&s=100"> | 翻译 | [考拉客](http://kaolake.net) - 考拉微商店主加盟立返100元！ |
-| [@JokerLinly](https://learnku.com/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  | Review | Stay Hungry. Stay Foolish. |
-
----
-
->
-> 转载请注明：本文档由 LearnKu 技术论坛 [learnku.com](https://learnku.com) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
->
-> 文档原地址： https://learnku.com/docs/laravel/9.x
+```js
+mix.disableNotifications();
+```
