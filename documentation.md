@@ -27,7 +27,7 @@
     - [响应](/docs/responses)
     - [视图](/docs/views)
     - [Blade 模板](/docs/blade)
-    - [Vite 编译 Assets](/docs/laravel-vite-compiles-assets)    
+    - [Vite 编译 Assets](/docs/vite)
     - [URL](/docs/urls)
     - [会话](/docs/session)
     - [表单验证](/docs/validation)

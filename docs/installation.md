@@ -1,279 +1,1303 @@
-# 安装
+# HTTP 测试
+
+- [简介](#introduction)
+- [创建请求](#making-requests)
+    - [自定义请求头](#customizing-request-headers)
+    - [Cookies](#cookies)
+    - [会话 / 认证](#session-and-authentication)
+    - [调试响应](#debugging-responses)
+    - [异常处理](#exception-handling)
+- [测试 JSON APIs](#testing-json-apis)
+    - [流畅 JSON 测试](#fluent-json-testing)
+- [测试文件上传](#testing-file-uploads)
+- [测试视图](#testing-views)
+    - [渲染切面 & 组件](#rendering-blade-and-components)
+- [可用断言](#available-assertions)
+    - [响应断言](#response-assertions)
+    - [身份验证断言](#authentication-assertions)
+    - [验证断言](#validation-assertions)
 
-- [认识 Laravel](#meet-laravel)
-  - [为什么选择 Laravel?](#why-laravel)
-- [你的第一个 Laravel 项目](#your-first-laravel-project)
-  - [macOS 入门](#getting-started-on-macos)
-  - [Windows 入门](#getting-started-on-windows)
-  - [Linux 入门](#getting-started-on-linux)
-  - [选择 Sail 服务](#choosing-your-sail-services)
-  - [通过 Composer 安装](#installation-via-composer)
-- [初始化](#initial-configuration)
-  - [基于环境的配置](#environment-based-configuration)
-  - [目录配置](#directory-configuration)
-- [下一步](#next-steps)
-  - [将 Laravel 用作全栈框架](#laravel-the-fullstack-framework)
-  - [将 Laravel 用作 API 后端](#laravel-the-api-backend)
+<a name="introduction"></a>
+## 简介
 
-<a name="meet-laravel"></a>
-## 认识 Laravel
+Laravel 提供了一个非常流畅的 API，用于向应用程序发出 HTTP 请求并检查响应。例如，看看下面定义的特性测试：
 
-Laravel 是一个 Web应用框架， 有着表现力强、语法优雅的特点。Web 框架为创建应用提供了一个结构和起点，你只需要专注于创造，我们来为你处理细节。
+    <?php
 
-Laravel 致力于提供出色的开发体验，同时提供强大的特性，例如完全的依赖注入，富有表现力的数据库抽象层，队列和计划任务，单元和集成测试等等。
+    namespace Tests\Feature;
 
-无论你是刚刚接触 PHP 和 Web 框架的新人，亦或是有着多年经验的老手， Laravel 都是一个可以与你一同成长的框架。我们将帮助你迈出成为 Web 开发者的第一步，或是将你的经验提高到下一个等级。我们迫不及待的想看看你的作品。
+    use Illuminate\Foundation\Testing\RefreshDatabase;
+    use Illuminate\Foundation\Testing\WithoutMiddleware;
+    use Tests\TestCase;
 
-<a name="why-laravel"></a>
-### 为什么选择 Laravel?
+    class ExampleTest extends TestCase
+    {
+        /**
+         * 基本功能测试示例。
+         */
+        public function test_a_basic_request(): void
+        {
+            $response = $this->get('/');
 
-有非常多的工具和框架可以被用于构建一个 Web 应用。但我们相信 Laravel 是构建现代化、全栈 Web 应用的最佳选择。
+            $response->assertStatus(200);
+        }
+    }
 
-#### 一个渐进式框架
+`get` 方法向应用程序发出 `Get` 请求，而 `assertStatus` 方法则断言返回的响应应该具有给定的 HTTP 状态代码。除了这个简单的断言之外，Laravel 还包含各种用于检查响应头、内容、JSON 结构等的断言。
 
-我们喜欢称 Laravel 是一个「渐进式」框架。意思是 Laravel 将与你一同成长。如果你是首次进入 Web 开发， Laravel 大量的文档、指南和 [视频教程](https://laracasts.com) 将帮助你熟悉使用技巧而不至于不知所措。
+<a name="making-requests"></a>
+## 创建请求
 
-如果你是高级开发人员，Laravel 为你提供了强大的工具用于 [依赖注入](/docs/laravel/9.x/container)、[单元测试](/docs/laravel/9.x/testing)、[队列](/docs/laravel/9.x/queues)、[广播系统](/docs/laravel/9.x/broadcasting) 等等。Laravel 为构建专业的 Web 应用程序进行了微调，并准备好处理企业工作负载。
+要向应用程序发出请求，可以在测试中调用`get`、`post`、`put`、`patch`或`delete`方法。这些方法实际上不会向应用程序发出「真正的」HTTP 请求。相反，整个网络请求是在内部模拟的。
 
-#### 一个可扩展的框架
+测试请求方法不返回`Illuminate\Http\Response`实例，而是返回`Illuminate\Testing\TestResponse`实例，该实例提供[各种有用的断言](##available-assertions),允许你检查应用程序的响应：
 
-Laravel 具有难以置信的可扩展性。由于 PHP 的灵活性以及 Laravel 对 Redis 等快速分布式缓存系统的内置支持，使用 Laravel 进行扩展是轻而易举的事。事实上，Laravel 应用程序已经很容易扩展到每月处理数亿个请求。
+    <?php
 
-需要压缩开发费用吗？ [Laravel Vapor](https://vapor.laravel.com) 允许你在 AWS 最新的无服务器技术上以几乎无限的规模运行 Laravel 应用程序。
+    namespace Tests\Feature;
 
-#### 一个社区化的框架
+    use Illuminate\Foundation\Testing\RefreshDatabase;
+    use Illuminate\Foundation\Testing\WithoutMiddleware;
+    use Tests\TestCase;
 
-Laravel 结合了 PHP 生态系统中最好的软件包，提供了最健壮、对开发人员友好的框架。此外，来自世界各地的数千名有才华的开发人员[为框架做出了贡献](https://github.com/laravel/framework)。谁知道呢，也许你就是下一个 Laravel 的贡献者。
+    class ExampleTest extends TestCase
+    {
+        /**
+         * 基本功能测试示例。
+         */
+        public function test_a_basic_request(): void
+        {
+            $response = $this->get('/');
 
-<a name="your-first-laravel-project"></a>
-## 你的第一个 Laravel 项目
+            $response->assertStatus(200);
+        }
+    }
 
-我们希望尽可能轻松地开始使用 Laravel。在你自己的计算机上开发和运行 Laravel 项目有多种选择。虽然你可能希望以后再研究这些选项，但 Laravel 提供了 [Sail](/docs/laravel/9.x/sail)，使用 [Docker](https://www.docker.com) 运行 Laravel 项目的内置解决方案
+通常，你的每个测试应该只向你的应用发出一个请求。如果在单个测试方法中执行多个请求，则可能会出现意外行为。
 
-Docker 是一种在小型、轻量级的「容器」中运行应用程序和服务的工具，它不会干扰本地计算机安装的软件或配置。这意味着你不必担心在个人计算机上配置或设置复杂的开发工具，例如 web 服务器和数据库。要开始，你只需安装 [Docker Desktop](https://www.docker.com/products/docker-desktop)。
+> **技巧**
+> 为了方便起见，运行测试时会自动禁用 CSRF 中间件。
 
-Laravel Sail 是一个轻量级的命令行界面，用于与 Laravel 的默认 Docker 配置进行交互。Sail 为使用 PHP、MySQL 和 Redis 构建 Laravel 应用程序提供了一个很好的起点，而无需之前的 Docker 经验。
+<a name="customizing-request-headers"></a>
+### 自定义请求头
 
-> 技巧：已经是 Docker 专家？别担心！关于 Sail 的一切都可以使用Laravel 附带的文件 `docker-compose.yml` 进行自定义。
+你可以使用此 `withHeaders` 方法自定义请求的标头，然后再将其发送到应用程序。这使你可以将任何想要的自定义标头添加到请求中：
 
-<a name="getting-started-on-macos"></a>
-### macOS 入门
+    <?php
 
-如果你在 Mac 上开发并且已经安装了 [Docker Desktop](https://www.docker.com/products/docker-desktop)，你可以使用一个简单的终端命令来创建一个新的 Laravel 项目。 例如，要在名为「example-app」的目录中创建一个新的 Laravel 应用程序，你可以在终端中运行以下命令：
+    namespace Tests\Feature;
 
-```shell
-curl -s "https://laravel.build/example-app" | bash
-```
+    use Tests\TestCase;
 
-当然，你可以将此 URL 中的「example-app」更改为你喜欢的任何内容。Laravel 应用程序的目录将在你执行命令的目录中创建。
+    class ExampleTest extends TestCase
+    {
+        /**
+         * 基本功能测试示例。
+         */
+        public function test_interacting_with_headers(): void
+        {
+            $response = $this->withHeaders([
+                'X-Header' => 'Value',
+            ])->post('/user', ['name' => 'Sally']);
 
-创建项目后，你可以导航到应用程序目录并启动 Laravel Sail。Laravel Sail 提供了一个简单的命令行界面，用于与 Laravel 的默认 Docker 配置进行交互：
+            $response->assertStatus(201);
+        }
+    }
 
-```shell
-cd example-app
-./vendor/bin/sail up
-```
+<a name="cookies"></a>
+### Cookies
 
-第一次运行 Sail `up` 命令时， Sail 的应用程序容器将在你的机器上构建。这可能需要几分钟。 **不用担心，随后尝试启动 Sail 会快得多。**
+在发送请求前你可以使用 `withCookie` 或 `withCookies` 方法设置 cookie。`withCookie` 接受 cookie 的名称和值这两个参数，而 `withCookies` 方法接受一个名称 / 值对数组：
 
-启动应用程序的 Docker 容器后，你可以在 Web 浏览器中访问应用程序： http://localhost 。
+    <?php
 
-> 技巧：要继续了解有关 Laravel Sail 的更多信息，请查看其 [完整文档](/docs/laravel/9.x/sail)。
+    namespace Tests\Feature;
 
-<a name="getting-started-on-windows"></a>
-### Windows 入门
+    use Tests\TestCase;
 
-在新建 Laravel 应用前，请确保你的 Windows 电脑已经安装了 [Docker Desktop](https://www.docker.com/products/docker-desktop)。之后，请确保已经安装并启用了适用于 Linux 的 Windows 子系统 2 （WSL2）。 WSL 允许你在 Windows 10 上运行 Linux 二进制文件。关于如何安装并启用 WSL2，请参阅微软 [开发者环境文档](https://docs.microsoft.com/en-us/windows/wsl/install-win10)。
+    class ExampleTest extends TestCase
+    {
+        public function test_interacting_with_cookies(): void
+        {
+            $response = $this->withCookie('color', 'blue')->get('/');
 
-> 技巧：安装并启用 WSL2 后，请确保 Docker Desktop 已经 [配置为使用 WSL2 后端](https://docs.docker.com/docker-for-windows/wsl/)。
+            $response = $this->withCookies([
+                'color' => 'blue',
+                'name' => 'Taylor',
+            ])->get('/');
+        }
+    }
 
-接下来，准备创建你的第一个 Laravel 项目。启动 [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701?rtc=1&activetab=pivot:overviewtab)，为 WSL2 Linux 操作系统打开一个终端。之后，你可以使用简单的命令来新建 Laravel 项目。比如，想要在「example-app」文件夹中新建 Laravel 应用，可以在终端中运行以下命令：
+<a name="session-and-authentication"></a>
+### 会话 (Session) / 认证 (Authentication)
 
-```shell
-curl -s https://laravel.build/example-app | bash
-```
+Laravel 提供了几个可在 HTTP 测试时使用 Session 的辅助函数。首先，你需要传递一个数组给 `withSession` 方法来设置 session 数据。这样在应用程序的测试请求发送之前，就会先去给数据加载 session：
 
-当然，你可以任意更改 URL 中的「example-app」。Laravel 应用将被创建在执行命令的文件夹中。
+    <?php
 
-创建项目后，你可以切换到应用目录并启动 Laravel Sail。Laravel Sail 提供了一个简单的命令行接口，用于和 Laravel 默认 Docker 配置进行交互：
+    namespace Tests\Feature;
 
-```shell
-cd example-app
-./vendor/bin/sail up
-```
+    use Tests\TestCase;
 
-在你首次运行 Sail 的 `up` 命令的时候，Sail 的应用容器将会在你的机器上进行编译。这个过程将会花费几分钟时间。**不要担心，以后就会很快了。**
+    class ExampleTest extends TestCase
+    {
+        public function test_interacting_with_the_session(): void
+        {
+            $response = $this->withSession(['banned' => false])->get('/');
+        }
+    }
 
-一旦应用的 Docker 容器启动了，你便可在 Web 浏览器中通过 http://localhost 访问你的应用了。
+Laravel 的 session 通常用于维护当前已验证用户的状态。因此，`actingAs` 方法提供了一种将给定用户作为当前用户进行身份验证的便捷方法。例如，我们可以使用一个[工厂模式](/docs/laravel/10.x/eloquent-factories)来生成和认证一个用户：
 
-> 技巧：要继续学习更多关于 Laravel Sail 的知识，请参阅 [详细文档](/docs/laravel/9.x/sail)。
+    <?php
 
-#### 使用 WSL2 进行开发
+    namespace Tests\Feature;
 
-当然，你需要能够修改在 WSL2 安装中创建的 Laravel 应用程序文件。我们推荐你使用微软的 [Visual Studio Code](https://code.visualstudio.com) 编辑器并搭配其 [Remote Development](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) 扩展，它们可以帮助你解决这个问题。
+    use App\Models\User;
+    use Tests\TestCase;
 
-一旦这些工具成功安装，你可以使用 Windows Terminal 在应用根目录执行 `code .` 命令来打开任何 Laravel 项目。
+    class ExampleTest extends TestCase
+    {
+        public function test_an_action_that_requires_authentication(): void
+        {
+            $user = User::factory()->create();
 
-<a name="getting-started-on-linux"></a>
-### 在 Linux 使用 Laravel Sail
+            $response = $this->actingAs($user)
+                             ->withSession(['banned' => false])
+                             ->get('/');
+        }
+    }
 
-如果在 Linux 开发，并且已经安装了 [Docker Compose](https://docs.docker.com/compose/install/)，你可以使用简单的终端命令来创建一个新的 Laravel 项目。例如，要在「example-app」目录中创建新的 Laravel 应用，你可以在终端中运行如下命令：
+你也可以通过传递看守器名称作为 `actingAs` 方法的第二参数以指定用户通过哪种看守器来认证。提供给 `actingAs` 方法的防护也将成为测试期间的默认防护。
 
-```shell
-curl -s https://laravel.build/example-app | bash
-```
+    $this->actingAs($user, 'web')
 
-当然，你可以将 URL 中的「example-app」替换为任何你喜欢的内容。Laravel 应用程序的目录将在执行命令的目录中创建。
+<a name="debugging-responses"></a>
+### 调试响应
 
-在项目创建完成后，你可以导航至应用目录和启动 Laravel Sail。Laravel Sail 提供了一个简单的命令行接口，用于与 Laravel 的默认 Docker 配置进行交互：
+在向你的应用程序发出测试请求之后，可以使用 `dump`、`dumpHeaders` 和 `dumpSession` 方法来检查和调试响应内容：
 
-```shell
-cd example-app
-./vendor/bin/sail up
-```
+    <?php
 
-在你首次运行 Sail 的 `up` 命令的时候，Sail 的应用容器将会在你的机器上进行编译。这个过程将会花费一段时间。**不要担心，以后就会很快了。**
+    namespace Tests\Feature;
 
-一旦应用的 Docker 容器启动了，你便可在 Web 浏览器中通过 http://localhost 访问你的应用了。
+    use Tests\TestCase;
 
-> 技巧：要继续学习更多关于 Laravel Sail 的知识，请参阅 [详细文档](/docs/laravel/9.x/sail)。
+    class ExampleTest extends TestCase
+    {
+        /**
+         * 基本功能测试示例。
+         */
+        public function test_basic_test(): void
+        {
+            $response = $this->get('/');
 
-<a name="choosing-your-sail-services"></a>
-### 选择你的 Sail 服务
+            $response->dumpHeaders();
 
-当通过 Sail 创建一个新的 Laravel 应用程序时, 你可以通过 `with` 查询变量来选择哪些服务需要配置到你的新应用程序的 `docker-compose.yml` 文件。 可选择的服务包括 `mysql`，`pgsql`，`mariadb`，`redis`，`memcached`，`meilisearch`，`minio`，`selenium` 和 `mailhog`：
+            $response->dumpSession();
 
-```shell
-curl -s "https://laravel.build/example-app?with=mysql,redis" | bash
-```
+            $response->dump();
+        }
+    }
 
-如果你没有制定你想配置的服务, 默认将配置 `mysql`，`redis`，`meilisearch`，`mailhog` 和 `selenium`。
+或者，你可以使用 `dd`、`ddHeaders` 和 `ddSession` 方法转储有关响应的信息，然后停止执行：
 
-你可以通过在 URL 中添加 [容器开发](/docs/laravel/9.x/sail#using-devcontainers)
-参数来指定 Sail 默认安装的服务。
+    <?php
 
-```shell
-curl -s "https://laravel.build/example-app?with=mysql,redis&devcontainer" | bash
-```
+    namespace Tests\Feature;
 
-<a name="installation-via-composer"></a>
-### 通过 Composer 安装
+    use Tests\TestCase;
 
-如果你的终端已经安装了 PHP 和 Composer，你可以直接使用 Composer 来创建一个新的 Laravel 项目。 当应用程序创建完成后，你可以通过 Artisan CLI 的 `serve` 命令来启动 Laravel 的本地服务：
+    class ExampleTest extends TestCase
+    {
+        /**
+         * 基本功能测试示例。
+         */
+        public function test_basic_test(): void
+        {
+            $response = $this->get('/');
 
-```shell
-composer create-project laravel/laravel example-app
-cd example-app
-php artisan serve
-```
+            $response->ddHeaders();
 
-<a name="the-laravel-installer"></a>
-#### 通过 Laravel 安装器
+            $response->ddSession();
 
-或者, 你可以通过 Laravel 安装器作为全局 Composer 依赖：
+            $response->dd();
+        }
+    }
 
-```shell
-composer global require laravel/installer
-laravel new example-app
-cd example-app
-php artisan serve
-```
+<a name="exception-handling"></a>
+### 异常处理
 
-请确保将 Composer 的全局 vendor bin 目录放置在你的系统环境变量 `$PATH` 中，以便系统可以找到 `laravel` 的可执行文件。在不同的操作系统中，该目录的路径也不相同；下面列出一些常见的位置：
+有时你可能想要测试你的应用程序是否引发了特定异常。为了确保异常不会被 Laravel 的异常处理程序捕获并作为 HTTP 响应返回，可以在发出请求之前调用 `withoutExceptionHandling` 方法：
 
-<div class="content-list" markdown="1">
+    $response = $this->withoutExceptionHandling()->get('/');
 
-- macOS: `$HOME/.composer/vendor/bin`
-- Windows: `%USERPROFILE%\AppData\Roaming\Composer\vendor\bin`
-- GNU / Linux Distributions: `$HOME/.config/composer/vendor/bin` or `$HOME/.composer/vendor/bin`
+此外，如果想确保你的应用程序没有使用 PHP 语言或你的应用程序正在使用的库已弃用的功能，你可以在发出请求之前调用 `withoutDeprecationHandling` 方法。禁用弃用处理时，弃用警告将转换为异常，从而导致你的测试失败：
+
+    $response = $this->withoutDeprecationHandling()->get('/');
+
+<a name="testing-json-apis"></a>
+## 测试 JSON APIs
+
+Laravel 也提供了几个辅助函数来测试 JSON APIs 和其响应。例如，`json`、`getJson`、`postJson`、`putJson`、`patchJson`、`deleteJson` 以及 `optionsJson` 可以被用于发送各种 HTTP 动作。你也可以轻松地将数据和请求头传递到这些方法中。首先，让我们实现一个测试示例，发送 `POST` 请求到 `/api/user`，并断言返回的期望数据：
+
+    <?php
+
+    namespace Tests\Feature;
+
+    use Tests\TestCase;
+
+    class ExampleTest extends TestCase
+    {
+        /**
+         * 基本功能测试示例。
+         */
+        public function test_making_an_api_request(): void
+        {
+            $response = $this->postJson('/api/user', ['name' => 'Sally']);
+
+            $response
+                ->assertStatus(201)
+                ->assertJson([
+                    'created' => true,
+                ]);
+        }
+    }
+
+此外，JSON 响应数据可以作为响应上的数组变量进行访问，从而使你可以方便地检查 JSON 响应中返回的各个值：
+
+    $this->assertTrue($response['created']);
+
+> **技巧**
+> `assertJson` 方法将响应转换为数组，并利用 `PHPUnit::assertArraySubset` 验证给定数组是否存在于应用程序返回的 JSON 响应中。因此，如果 JSON 响应中还有其他属性，则只要存在给定的片段，此测试仍将通过。
+
+<a name="verifying-exact-match"></a>
+#### 验证 JSON 完全匹配
+
+如前所述，`assertJson` 方法可用于断言 JSON 响应中存在 JSON 片段。如果你想验证给定数组是否与应用程序返回的 JSON **完全匹配**，则应使用 `assertExactJson` 方法：
+
+    <?php
+
+    namespace Tests\Feature;
+
+    use Tests\TestCase;
+
+    class ExampleTest extends TestCase
+    {
+        /**
+         * 基本功能测试示例。
+         */
+        public function test_asserting_an_exact_json_match(): void
+        {
+            $response = $this->postJson('/user', ['name' => 'Sally']);
+
+            $response
+                ->assertStatus(201)
+                ->assertExactJson([
+                    'created' => true,
+                ]);
+        }
+    }
+
+<a name="verifying-json-paths"></a>
+#### 验证 JSON 路径
+
+如果你想验证 JSON 响应是否包含指定路径上的某些给定数据，可以使用 `assertJsonPath` 方法：
+
+    <?php
+
+    namespace Tests\Feature;
+
+    use Tests\TestCase;
+
+    class ExampleTest extends TestCase
+    {
+        /**
+         * 基本功能测试示例。
+         */
+        public function test_asserting_a_json_paths_value(): void
+        {
+            $response = $this->postJson('/user', ['name' => 'Sally']);
+
+            $response
+                ->assertStatus(201)
+                ->assertJsonPath('team.owner.name', 'Darian');
+        }
+    }
+
+`assertJsonPath` 方法也接受一个闭包，可以用来动态地确定断言是否应该通过。
+
+    $response->assertJsonPath('team.owner.name', fn (string $name) => strlen($name) >= 3);
+
+<a name="fluent-json-testing"></a>
+### JSON 流式测试
+
+Laravel 还提供了一种漂亮的方式来流畅地测试应用程序的 JSON 响应。首先，将闭包传递给 `assertJson` 方法。这个闭包将使用 `Illuminate\Testing\Fluent\AssertableJson` 的实例调用，该实例可用于对应用程序返回的 JSON 进行断言。 `where` 方法可用于对 JSON 的特定属性进行断言，而 `missing` 方法可用于断言 JSON 中缺少特定属性：
+
+    use Illuminate\Testing\Fluent\AssertableJson;
+
+    /**
+     * 基本功能测试示例。
+     */
+    public function test_fluent_json(): void
+    {
+        $response = $this->getJson('/users/1');
+
+        $response
+            ->assertJson(fn (AssertableJson $json) =>
+                $json->where('id', 1)
+                     ->where('name', 'Victoria Faith')
+                     ->where('email', fn (string $email) => str($email)->is('victoria@gmail.com'))
+                     ->whereNot('status', 'pending')
+                     ->missing('password')
+                     ->etc()
+            );
+    }
+
+#### 了解 `etc` 方法
+
+在上面的例子中, 你可能已经注意到我们在断言链的末端调用了 `etc` 方法. 这个方法通知Laravel，在JSON对象上可能还有其他的属性存在。如果没有使用 `etc` 方法, 如果你没有对JSON对象的其他属性进行断言, 测试将失败.
+
+这种行为背后的意图是保护你不会在你的 JSON 响应中无意地暴露敏感信息，因为它迫使你明确地对该属性进行断言或通过 `etc` 方法明确地允许额外的属性。
+
+然而，你应该知道，在你的断言链中不包括 `etc` 方法并不能确保额外的属性不会被添加到嵌套在 JSON 对象中的数组。`etc` 方法只能确保在调用 `etc` 方法的嵌套层中不存在额外的属性。
+
+<a name="asserting-json-attribute-presence-and-absence"></a>
+#### 断言属性存在/不存在
+
+要断言属性存在或不存在，可以使用 `has` 和 `missing` 方法：
+
+    $response->assertJson(fn (AssertableJson $json) =>
+        $json->has('data')
+             ->missing('message')
+    );
+
+此外，`hasAll` 和 `missingAll` 方法允许同时断言多个属性的存在或不存在：
+
+    $response->assertJson(fn (AssertableJson $json) =>
+        $json->hasAll(['status', 'data'])
+             ->missingAll(['message', 'code'])
+    );
+
+你可以使用 `hasAny` 方法来确定是否存在给定属性列表中的至少一个：
+
+    $response->assertJson(fn (AssertableJson $json) =>
+        $json->has('status')
+             ->hasAny('data', 'message', 'code')
+    );
+
+<a name="asserting-against-json-collections"></a>
+#### 断言反对 JSON 集合
+
+通常，你的路由将返回一个 JSON 响应，其中包含多个项目，例如多个用户：
+
+    Route::get('/users', function () {
+        return User::all();
+    });
+
+在这些情况下，我们可以使用 fluent JSON 对象的 `has` 方法对响应中包含的用户进行断言。例如，让我们断言 JSON 响应包含三个用户。接下来，我们将使用 `first` 方法对集合中的第一个用户进行一些断言。 `first` 方法接受一个闭包，该闭包接收另一个可断言的 JSON 字符串，我们可以使用它来对 JSON 集合中的第一个对象进行断言：
+
+    $response
+        ->assertJson(fn (AssertableJson $json) =>
+            $json->has(3)
+                 ->first(fn (AssertableJson $json) =>
+                    $json->where('id', 1)
+                         ->where('name', 'Victoria Faith')
+                         ->where('email', fn (string $email) => str($email)->is('victoria@gmail.com'))
+                         ->missing('password')
+                         ->etc()
+                 )
+        );
+
+<a name="scoping-json-collection-assertions"></a>
+#### JSON 集合范围断言
+
+有时，你的应用程序的路由将返回分配有命名键的 JSON 集合：
+
+    Route::get('/users', function () {
+        return [
+            'meta' => [...],
+            'users' => User::all(),
+        ];
+    })
+
+在测试这些路由时，你可以使用 `has` 方法来断言集合中的项目数。此外，你可以使用 `has` 方法来确定断言链的范围：
+
+    $response
+        ->assertJson(fn (AssertableJson $json) =>
+            $json->has('meta')
+                 ->has('users', 3)
+                 ->has('users.0', fn (AssertableJson $json) =>
+                    $json->where('id', 1)
+                         ->where('name', 'Victoria Faith')
+                         ->where('email', fn (string $email) => str($email)->is('victoria@gmail.com'))
+                         ->missing('password')
+                         ->etc()
+                 )
+        );
+
+但是，你可以进行一次调用，提供一个闭包作为其第三个参数，而不是对 `has` 方法进行两次单独调用来断言 `users` 集合。这样做时，将自动调用闭包并将其范围限定为集合中的第一项：
+
+    $response
+        ->assertJson(fn (AssertableJson $json) =>
+            $json->has('meta')
+                 ->has('users', 3, fn (AssertableJson $json) =>
+                    $json->where('id', 1)
+                         ->where('name', 'Victoria Faith')
+                         ->where('email', fn (string $email) => str($email)->is('victoria@gmail.com'))
+                         ->missing('password')
+                         ->etc()
+                 )
+        );
+
+<a name="asserting-json-types"></a>
+#### 断言 JSON 类型
+
+你可能只想断言 JSON 响应中的属性属于某种类型。 `Illuminate\Testing\Fluent\AssertableJson` 类提供了 `whereType` 和 `whereAllType` 方法来做到这一点：
+
+    $response->assertJson(fn (AssertableJson $json) =>
+        $json->whereType('id', 'integer')
+             ->whereAllType([
+                'users.0.name' => 'string',
+                'meta' => 'array'
+            ])
+    );
+
+你可以使用 `|` 字符指定多种类型，或者将类型数组作为第二个参数传递给 `whereType` 方法。如果响应值为任何列出的类型，则断言将成功：
+
+    $response->assertJson(fn (AssertableJson $json) =>
+        $json->whereType('name', 'string|null')
+             ->whereType('id', ['string', 'integer'])
+    );
+
+`whereType` 和 `whereAllType` 方法识别以下类型：`string`、`integer`、`double`、`boolean`、`array` 和 `null`。
+
+<a name="testing-file-uploads"></a>
+## 测试文件上传
+
+`Illuminate\Http\UploadedFile` 提供了一个 `fake` 方法用于生成虚拟的文件或者图像以供测试之用。它可以和 `Storage` facade 的 `fake` 方法相结合，大幅度简化了文件上传测试。举个例子，你可以结合这两者的功能非常方便地进行头像上传表单测试：
+
+    <?php
+
+    namespace Tests\Feature;
+
+    use Illuminate\Foundation\Testing\RefreshDatabase;
+    use Illuminate\Foundation\Testing\WithoutMiddleware;
+    use Illuminate\Http\UploadedFile;
+    use Illuminate\Support\Facades\Storage;
+    use Tests\TestCase;
+
+    class ExampleTest extends TestCase
+    {
+        public function test_avatars_can_be_uploaded(): void
+        {
+            Storage::fake('avatars');
+
+            $file = UploadedFile::fake()->image('avatar.jpg');
+
+            $response = $this->post('/avatar', [
+                'avatar' => $file,
+            ]);
+
+            Storage::disk('avatars')->assertExists($file->hashName());
+        }
+    }
+
+如果你想断言一个给定的文件不存在，则可以使用由 `Storage` facade 提供的 `AssertMissing` 方法：
+
+    Storage::fake('avatars');
+
+    // ...
+
+    Storage::disk('avatars')->assertMissing('missing.jpg');
+
+<a name="fake-file-customization"></a>
+#### 虚拟文件定制
+
+当使用 `UploadedFile` 类提供的 `fake` 方法创建文件时，你可以指定图片的宽度、高度和大小（以千字节为单位），以便更好地测试你的应用程序的验证规则。
+
+    UploadedFile::fake()->image('avatar.jpg', $width, $height)->size(100);
+
+除创建图像外，你也可以用 `create` 方法创建其他类型的文件：
+
+    UploadedFile::fake()->create('document.pdf', $sizeInKilobytes);
+
+如果需要，可以向该方法传递一个 `$mimeType` 参数，以显式定义文件应返回的 MIME 类型：
+
+    UploadedFile::fake()->create(
+        'document.pdf', $sizeInKilobytes, 'application/pdf'
+    );
+
+<a name="testing-views"></a>
+## 测试视图
+
+Laravel 允许在不向应用程序发出模拟 HTTP 请求的情况下独立呈现视图。为此，可以在测试中使用 `view` 方法。`view` 方法接受视图名称和一个可选的数据数组。这个方法返回一个 `Illuminate\Testing\TestView` 的实例，它提供了几个方法来方便地断言视图的内容：
+
+    <?php
+
+    namespace Tests\Feature;
+
+    use Tests\TestCase;
+
+    class ExampleTest extends TestCase
+    {
+        public function test_a_welcome_view_can_be_rendered(): void
+        {
+            $view = $this->view('welcome', ['name' => 'Taylor']);
+
+            $view->assertSee('Taylor');
+        }
+    }
+
+`TestView` 对象提供了以下断言方法：`assertSee`、`assertSeeInOrder`、`assertSeeText`、`assertSeeTextInOrder`、`assertDontSee` 和 `assertDontSeeText`。
+
+如果需要，你可以通过将 `TestView` 实例转换为一个字符串获得原始的视图内容：
+
+    $contents = (string) $this->view('welcome');
+
+<a name="sharing-errors"></a>
+#### 共享错误
+
+一些视图可能依赖于 Laravel 提供的 [全局错误包](/docs/laravel/10.x/validation#quick-displaying-the-validation-errors) 中共享的错误。要在错误包中生成错误消息，可以使用 `withViewErrors` 方法：
+
+    $view = $this->withViewErrors([
+        'name' => ['Please provide a valid name.']
+    ])->view('form');
+
+    $view->assertSee('Please provide a valid name.');
+
+<a name="rendering-blade-and-components"></a>
+### 渲染模板 & 组件
+
+必要的话，你可以使用 `blade` 方法来计算和呈现原始的 [Blade](/docs/laravel/10.x/blade) 字符串。与 `view` 方法一样，`blade` 方法返回的是 `Illuminate\Testing\TestView` 的实例：
+
+    $view = $this->blade(
+        '<x-component :name="$name" />',
+        ['name' => 'Taylor']
+    );
+
+    $view->assertSee('Taylor');
+
+你可以使用 `component` 方法来评估和渲染 [Blade 组件](/docs/laravel/10.x/blade#components)。类似于 `view` 方法，`component` 方法返回一个 `Illuminate\Testing\TestView` 的实例：
+
+    $view = $this->component(Profile::class, ['name' => 'Taylor']);
+
+    $view->assertSee('Taylor');
+
+<a name="available-assertions"></a>
+## 可用断言
+
+<a name="response-assertions"></a>
+### 响应断言
+
+Laravel 的 `Illuminate\Testing\TestResponse` 类提供了各种自定义断言方法，你可以在测试应用程序时使用它们。可以在由 `json`、`get`、`post`、`put` 和 `delete` 方法返回的响应上访问这些断言：
+
+<style>
+    .collection-method-list > p {
+        columns: 14.4em 2; -moz-columns: 14.4em 2; -webkit-columns: 14.4em 2;
+    }
+
+    .collection-method-list a {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
+
+<div class="collection-method-list" markdown="1">
+
+[assertCookie](#assert-cookie)
+[assertCookieExpired](#assert-cookie-expired)
+[assertCookieNotExpired](#assert-cookie-not-expired)
+[assertCookieMissing](#assert-cookie-missing)
+[assertCreated](#assert-created)
+[assertDontSee](#assert-dont-see)
+[assertDontSeeText](#assert-dont-see-text)
+[assertDownload](#assert-download)
+[assertExactJson](#assert-exact-json)
+[assertForbidden](#assert-forbidden)
+[assertHeader](#assert-header)
+[assertHeaderMissing](#assert-header-missing)
+[assertJson](#assert-json)
+[assertJsonCount](#assert-json-count)
+[assertJsonFragment](#assert-json-fragment)
+[assertJsonIsArray](#assert-json-is-array)
+[assertJsonIsObject](#assert-json-is-object)
+[assertJsonMissing](#assert-json-missing)
+[assertJsonMissingExact](#assert-json-missing-exact)
+[assertJsonMissingValidationErrors](#assert-json-missing-validation-errors)
+[assertJsonPath](#assert-json-path)
+[assertJsonMissingPath](#assert-json-missing-path)
+[assertJsonStructure](#assert-json-structure)
+[assertJsonValidationErrors](#assert-json-validation-errors)
+[assertJsonValidationErrorFor](#assert-json-validation-error-for)
+[assertLocation](#assert-location)
+[assertContent](#assert-content)
+[assertNoContent](#assert-no-content)
+[assertStreamedContent](#assert-streamed-content)
+[assertNotFound](#assert-not-found)
+[assertOk](#assert-ok)
+[assertPlainCookie](#assert-plain-cookie)
+[assertRedirect](#assert-redirect)
+[assertRedirectContains](#assert-redirect-contains)
+[assertRedirectToRoute](#assert-redirect-to-route)
+[assertRedirectToSignedRoute](#assert-redirect-to-signed-route)
+[assertSee](#assert-see)
+[assertSeeInOrder](#assert-see-in-order)
+[assertSeeText](#assert-see-text)
+[assertSeeTextInOrder](#assert-see-text-in-order)
+[assertSessionHas](#assert-session-has)
+[assertSessionHasInput](#assert-session-has-input)
+[assertSessionHasAll](#assert-session-has-all)
+[assertSessionHasErrors](#assert-session-has-errors)
+[assertSessionHasErrorsIn](#assert-session-has-errors-in)
+[assertSessionHasNoErrors](#assert-session-has-no-errors)
+[assertSessionDoesntHaveErrors](#assert-session-doesnt-have-errors)
+[assertSessionMissing](#assert-session-missing)
+[assertStatus](#assert-status)
+[assertSuccessful](#assert-successful)
+[assertUnauthorized](#assert-unauthorized)
+[assertUnprocessable](#assert-unprocessable)
+[assertValid](#assert-valid)
+[assertInvalid](#assert-invalid)
+[assertViewHas](#assert-view-has)
+[assertViewHasAll](#assert-view-has-all)
+[assertViewIs](#assert-view-is)
+[assertViewMissing](#assert-view-missing)
 
 </div>
 
-为方便起见，Laravel 安装程序还可以为你的新项目创建一个 Git 仓库。如需创建 Git 仓库，请在创建新项目时通过 `--git` 指定：
+<a name="assert-cookie"></a>
+#### assertCookie
 
-```shell
-laravel new example-app --git
+断言响应中包含给定的 cookie：
+
+    $response->assertCookie($cookieName, $value = null);
+
+<a name="assert-cookie-expired"></a>
+#### assertCookieExpired
+
+断言响应包含给定的过期的 cookie：
+
+    $response->assertCookieExpired($cookieName);
+
+<a name="assert-cookie-not-expired"></a>
+#### assertCookieNotExpired
+
+断言响应包含给定的未过期的 cookie：
+
+    $response->assertCookieNotExpired($cookieName);
+
+<a name="assert-cookie-missing"></a>
+#### assertCookieMissing
+
+断言响应不包含给定的 cookie:
+
+    $response->assertCookieMissing($cookieName);
+
+<a name="assert-created"></a>
+#### assertCreated
+
+断言做状态代码为 201 的响应：
+
+    $response->assertCreated();
+
+<a name="assert-dont-see"></a>
+#### assertDontSee
+
+断言给定的字符串不包含在响应中。除非传递第二个参数 `false`，否则此断言将给定字符串进行转义后匹配：
+
+    $response->assertDontSee($value, $escaped = true);
+
+<a name="assert-dont-see-text"></a>
+#### assertDontSeeText
+
+断言给定的字符串不包含在响应文本中。除非你传递第二个参数 `false`，否则该断言将自动转义给定的字符串。该方法将在做出断言之前将响应内容传递给 PHP 的 `strip_tags` 函数：
+
+    $response->assertDontSeeText($value, $escaped = true);
+
+<a name="assert-download"></a>
+#### assertDownload
+
+断言响应是「下载」。通常，这意味着返回响应的调用路由返回了 `Response::download` 响应、`BinaryFileResponse` 或 `Storage::download` 响应：
+
+    $response->assertDownload();
+
+如果你愿意，你可以断言可下载的文件被分配了一个给定的文件名：
+
+    $response->assertDownload('image.jpg');
+
+<a name="assert-exact-json"></a>
+#### assertExactJson
+
+断言响应包含与给定 JSON 数据的完全匹配：
+
+    $response->assertExactJson(array $data);
+
+<a name="assert-forbidden"></a>
+#### assertForbidden
+
+断言响应中有禁止访问 (403) 状态码：
+
+    $response->assertForbidden();
+
+<a name="assert-header"></a>
+#### assertHeader
+
+断言给定的 header 在响应中存在：
+
+    $response->assertHeader($headerName, $value = null);
+
+<a name="assert-header-missing"></a>
+#### assertHeaderMissing
+
+断言给定的 header 在响应中不存在：
+
+    $response->assertHeaderMissing($headerName);
+
+<a name="assert-json"></a>
+#### assertJson
+
+断言响应包含给定的 JSON 数据：
+
+    $response->assertJson(array $data, $strict = false);
+
+`AssertJson` 方法将响应转换为数组，并利用 `PHPUnit::assertArraySubset` 验证给定数组是否存在于应用程序返回的 JSON 响应中。因此，如果 JSON 响应中还有其他属性，则只要存在给定的片段，此测试仍将通过。
+
+<a name="assert-json-count"></a>
+#### assertJsonCount
+
+断言响应 JSON 中有一个数组，其中包含给定键的预期元素数量：
+
+    $response->assertJsonCount($count, $key = null);
+
+<a name="assert-json-fragment"></a>
+#### assertJsonFragment
+
+断言响应包含给定 JSON 片段：
+
+    Route::get('/users', function () {
+        return [
+            'users' => [
+                [
+                    'name' => 'Taylor Otwell',
+                ],
+            ],
+        ];
+    });
+
+    $response->assertJsonFragment(['name' => 'Taylor Otwell']);
+
+<a name="assert-json-is-array"></a>
+#### assertJsonIsArray
+
+断言响应的 JSON 是一个数组。
+
+    $response->assertJsonIsArray();
+
+<a name="assert-json-is-object"></a>
+#### assertJsonIsObject
+
+断言响应的 JSON 是一个对象。
+
+    $response->assertJsonIsObject();
+
+<a name="assert-json-missing"></a>
+#### assertJsonMissing
+
+断言响应未包含给定的 JSON 片段：
+
+    $response->assertJsonMissing(array $data);
+
+<a name="assert-json-missing-exact"></a>
+#### assertJsonMissingExact
+
+断言响应不包含确切的 JSON 片段：
+
+    $response->assertJsonMissingExact(array $data);
+
+<a name="assert-json-missing-validation-errors"></a>
+#### assertJsonMissingValidationErrors
+
+断言响应响应对于给定的键没有 JSON 验证错误：
+
+    $response->assertJsonMissingValidationErrors($keys);
+
+> **提示**
+> 更通用的 [assertValid](#assert-valid) 方法可用于断言响应没有以 JSON 形式返回的验证错误**并且**没有错误被闪现到会话存储中。
+
+<a name="assert-json-path"></a>
+#### assertJsonPath
+
+断言响应包含指定路径上的给定数据：
+
+    $response->assertJsonPath($path, $expectedValue);
+
+例如，如果你的应用程序返回的 JSON 响应包含以下数据：
+
+```json
+{
+    "user": {
+        "name": "Steve Schoger"
+    }
+}
 ```
-此命令将为你的项目初始化一个新的 Git 仓库并自动提交基础的 Laravel 框架。使用 `git` 命令前请确保你已正确安装并配置 Git。你还可以使用该 `--branch` 命令来设置初始的分支名称：
 
-```shell
-laravel new example-app --git --branch="main"
+你可以断言 `user` 对象的 `name` 属性匹配给定值，如下所示：
+
+    $response->assertJsonPath('user.name', 'Steve Schoger');
+
+<a name="assert-json-missing-path"></a>
+#### assertJsonMissingPath
+
+断言响应具有给定的 JSON 结构：
+
+    $response->assertJsonMissingPath($path);
+
+例如，如果你的应用程序返回的 JSON 响应包含以下数据：
+
+```json
+{
+    "user": {
+        "name": "Steve Schoger"
+    }
+}
 ```
 
-除了使用 `--git` 命令之外，你还可以使用 `--github` 命令在 GitHub 上创建相应的私有仓库：
+你可以断言它不包含 `user` 对象的 `email` 属性。
 
-```shell
-laravel new example-app --github
+    $response->assertJsonMissingPath('user.email');
+
+<a name="assert-json-structure"></a>
+#### assertJsonStructure
+
+断言响应具有给定的 JSON 结构：
+
+    $response->assertJsonStructure(array $structure);
+
+例如，如果你的应用程序返回的 JSON 响应包含以下数据：
+
+```json
+{
+    "user": {
+        "name": "Steve Schoger"
+    }
+}
 ```
 
-创建的仓库将在 `https://github.com/<your-account>/example-app` 上。 使用 `github` 命令前请确保你已正确安装 [GitHub CLI](https://cli.github.com) 并已通过 GitHub 进行身份验证。此外，你还应该安装 `git` 并正确配置。如果需要，你可以传递 GitHub CLI 支持的其它命令：
+你可以断言 JSON 结构符合你的期望，如下所示：
 
-```shell
-laravel new example-app --github="--public"
+    $response->assertJsonStructure([
+        'user' => [
+            'name',
+        ]
+    ]);
+
+有时，你的应用程序返回的 JSON 响应可能包含对象数组：
+
+```json
+{
+    "user": [
+        {
+            "name": "Steve Schoger",
+            "age": 55,
+            "location": "Earth"
+        },
+        {
+            "name": "Mary Schoger",
+            "age": 60,
+            "location": "Earth"
+        }
+    ]
+}
 ```
 
-你可以使用 `--organization` 命令在特定的 GitHub 组织下创建仓库：
+在这种情况下，你可以使用 `*` 字符来断言数组中所有对象的结构：
 
-```shell
-laravel new example-app --github="--public" --organization="laravel"
+    $response->assertJsonStructure([
+        'user' => [
+            '*' => [
+                 'name',
+                 'age',
+                 'location'
+            ]
+        ]
+    ]);
+
+<a name="assert-json-validation-errors"></a>
+#### assertJsonValidationErrors
+
+断言响应具有给定键的给定 JSON 验证错误。在断言验证错误作为 JSON 结构返回而不是闪现到会话的响应时，应使用此方法：
+
+    $response->assertJsonValidationErrors(array $data, $responseKey = 'errors');
+
+> **技巧**
+> 更通用的 [assertInvalid](#assert-invalid) 方法可用于断言响应具有以 JSON 形式返回的验证错误**或**错误已闪存到会话存储。
+
+<a name="assert-json-validation-error-for"></a>
+#### assertJsonValidationErrorFor
+
+断言响应对给定键有任何 JSON 验证错误：
+
+    $response->assertJsonValidationErrorFor(string $key, $responseKey = 'errors');
+
+<a name="assert-location"></a>
+#### assertLocation
+
+断言响应在 `Location` 头部中具有给定的 URI 值：
+
+    $response->assertLocation($uri);
+
+<a name="assert-content"></a>
+#### assertContent
+
+断言给定的字符串与响应内容匹配。
+
+    $response->assertContent($value);
+
+<a name="assert-no-content"></a>
+#### assertNoContent
+
+断言响应具有给定的 HTTP 状态码且没有内容：
+
+    $response->assertNoContent($status = 204);
+
+<a name="assert-streamed-content"></a>
+#### assertStreamedContent
+
+断言给定的字符串与流式响应的内容相匹配。
+
+    $response->assertStreamedContent($value);
+
+<a name="assert-not-found"></a>
+#### assertNotFound
+
+断言响应具有未找到（404）HTTP 状态码：
+
+    $response->assertNotFound();
+
+<a name="assert-ok"></a>
+#### assertOk
+
+断言响应有 200 状态码：
+
+    $response->assertOk();
+
+<a name="assert-plain-cookie"></a>
+#### assertPlainCookie
+
+断言响应包含给定的 cookie（未加密）:
+
+    $response->assertPlainCookie($cookieName, $value = null);
+
+<a name="assert-redirect"></a>
+#### assertRedirect
+
+断言响应会重定向到给定的 URI：
+
+    $response->assertRedirect($uri);
+
+<a name="assert-redirect-contains"></a>
+#### assertRedirectContains
+
+断言响应是否重定向到包含给定字符串的 URI：
+
+    $response->assertRedirectContains($string);
+
+<a name="assert-redirect-to-route"></a>
+#### assertRedirectToRoute
+
+断言响应是对给定的[命名路由](/docs/laravel/10.x/routing#named-routes)的重定向。
+
+    $response->assertRedirectToRoute($name = null, $parameters = []);
+
+<a name="assert-redirect-to-signed-route"></a>
+#### assertRedirectToSignedRoute
+
+断言响应是对给定[签名路由](/docs/laravel/10.x/urls#signed-urls)的重定向：
+
+    $response->assertRedirectToSignedRoute($name = null, $parameters = []);
+
+<a name="assert-see"></a>
+#### assertSee
+
+断言给定的字符串包含在响应中。除非传递第二个参数 `false`，否则此断言将给定字符串进行转义后匹配：
+
+    $response->assertSee($value, $escaped = true);
+
+<a name="assert-see-in-order"></a>
+#### assertSeeInOrder
+
+断言给定的字符串按顺序包含在响应中。除非传递第二个参数 `false`，否则此断言将给定字符串进行转义后匹配：
+
+    $response->assertSeeInOrder(array $values, $escaped = true);
+
+<a name="assert-see-text"></a>
+#### assertSeeText
+
+断言给定字符串包含在响应文本中。除非传递第二个参数 `false`，否则此断言将给定字符串进行转义后匹配。在做出断言之前，响应内容将被传递到 PHP 的 `strip_tags` 函数：
+
+    $response->assertSeeText($value, $escaped = true);
+
+<a name="assert-see-text-in-order"></a>
+#### assertSeeTextInOrder
+
+断言给定的字符串按顺序包含在响应的文本中。除非传递第二个参数 `false`，否则此断言将给定字符串进行转义后匹配。在做出断言之前，响应内容将被传递到 PHP 的 `strip_tags` 函数：
+
+    $response->assertSeeTextInOrder(array $values, $escaped = true);
+
+<a name="assert-session-has"></a>
+#### assertSessionHas
+
+断言 Session 包含给定的数据段：
+
+    $response->assertSessionHas($key, $value = null);
+
+如果需要，可以提供一个闭包作为 `assertSessionHas` 方法的第二个参数。如果闭包返回 `true`，则断言将通过：
+
+    $response->assertSessionHas($key, function (User $value) {
+        return $value->name === 'Taylor Otwell';
+    });
+
+<a name="assert-session-has-input"></a>
+#### assertSessionHasInput
+
+session 在 [闪存输入数组](/docs/laravel/9.x/responses#redirecting-with-flashed-session-data) 中断言具有给定值：
+
+    $response->assertSessionHasInput($key, $value = null);
+
+如果需要，可以提供一个闭包作为 `assertSessionHasInput` 方法的第二个参数。如果闭包返回 `true`，则断言将通过：
+
+    $response->assertSessionHasInput($key, function (string $value) {
+        return Crypt::decryptString($value) === 'secret';
+    });
+
+<a name="assert-session-has-all"></a>
+#### assertSessionHasAll
+
+断言 Session 中具有给定的键 / 值对列表：
+
+    $response->assertSessionHasAll(array $data);
+
+例如，如果你的应用程序会话包含 `name` 和 `status` 键，则可以断言它们存在并且具有指定的值，如下所示：
+
+    $response->assertSessionHasAll([
+        'name' => 'Taylor Otwell',
+        'status' => 'active',
+    ]);
+
+<a name="assert-session-has-errors"></a>
+#### assertSessionHasErrors
+
+断言 session 包含给定 `$keys` 的 Laravel 验证错误。如果 `$keys` 是关联数组，则断言 session 包含每个字段（key）的特定错误消息（value）。测试将闪存验证错误到 session 的路由时，应使用此方法，而不是将其作为 JSON 结构返回：
+
+    $response->assertSessionHasErrors(
+        array $keys, $format = null, $errorBag = 'default'
+    );
+
+例如，要断言 `name` 和 `email` 字段具有已闪存到 session 的验证错误消息，可以调用 `assertSessionHasErrors` 方法，如下所示：
+
+    $response->assertSessionHasErrors(['name', 'email']);
+
+或者，你可以断言给定字段具有特定的验证错误消息：
+
+    $response->assertSessionHasErrors([
+        'name' => 'The given name was invalid.'
+    ]);
+
+> **注意**
+> 更加通用的 [assertInvalid](#assert-invalid) 方法可以用来断言一个响应有验证错误，以JSON形式返回，**或** 将错误被闪存到会话存储中。
+
+<a name="assert-session-has-errors-in"></a>
+#### assertSessionHasErrorsIn
+
+断言会话在特定的[错误包](/docs/laravel/10.x/validation#named-error-bags)中包含给定 `$keys` 的错误。如果 `$keys` 是一个关联数组，则断言该 session 在错误包内包含每个字段（键）的特定错误消息（值）：
+
+    $response->assertSessionHasErrorsIn($errorBag, $keys = [], $format = null);
+
+<a name="assert-session-has-no-errors"></a>
+#### assertSessionHasNoErrors
+
+断言 session 没有验证错误：
+
+    $response->assertSessionHasNoErrors();
+
+<a name="assert-session-doesnt-have-errors"></a>
+#### assertSessionDoesntHaveErrors
+
+断言会话对给定键没有验证错误：
+
+    $response->assertSessionDoesntHaveErrors($keys = [], $format = null, $errorBag = 'default');
+
+> **注意**
+> 更加通用的 [assertValid](#assert-valid) 方法可以用来断言一个响应没有以JSON形式返回的验证错误，**同时** 不会将错误被闪存到会话存储中。
+
+<a name="assert-session-missing"></a>
+#### assertSessionMissing
+
+断言 session 中缺少指定的 $key：
+
+    $response->assertSessionMissing($key);
+
+<a name="assert-status"></a>
+#### assertStatus
+
+断言响应指定的 http 状态码：
+
+    $response->assertStatus($code);
+
+<a name="assert-successful"></a>
+#### assertSuccessful
+
+断言响应一个成功的状态码 (>= 200 且 < 300) :
+
+    $response->assertSuccessful();
+
+<a name="assert-unauthorized"></a>
+#### assertUnauthorized
+
+断言一个未认证的状态码 (401)：
+
+    $response->assertUnauthorized();
+
+<a name="assert-unprocessable"></a>
+#### assertUnprocessable
+
+断言响应具有不可处理的实体 (422) HTTP 状态代码：
+
+    $response->assertUnprocessable();
+
+<a name="assert-valid"></a>
+#### assertValid
+
+断言响应对给定键没有验证错误。此方法可用于断言验证错误作为 JSON 结构返回或验证错误已闪现到会话的响应：
+
+    // 断言不存在验证错误...
+    $response->assertValid();
+
+    // 断言给定的键没有验证错误...
+    $response->assertValid(['name', 'email']);
+
+<a name="assert-invalid"></a>
+#### assertInvalid
+
+断言响应对给定键有验证错误。此方法可用于断言验证错误作为 JSON 结构返回或验证错误已闪存到会话的响应：
+
+    $response->assertInvalid(['name', 'email']);
+
+你还可以断言给定键具有特定的验证错误消息。这样做时，你可以提供整条消息或仅提供一部分消息：
+
+    $response->assertInvalid([
+        'name' => 'The name field is required.',
+        'email' => 'valid email address',
+    ]);
+
+<a name="assert-view-has"></a>
+#### assertViewHas
+
+断言为响应视图提供了一个键值对数据：
+
+    $response->assertViewHas($key, $value = null);
+
+将闭包作为第二个参数传递给 `assertViewHas` 方法将允许你检查并针对特定的视图数据做出断言：
+
+    $response->assertViewHas('user', function (User $user) {
+        return $user->name === 'Taylor';
+    });
+
+此外，视图数据可以作为数组变量访问响应，让你可以方便地检查它：
+
+    $this->assertEquals('Taylor', $response['name']);
+
+<a name="assert-view-has-all"></a>
+#### assertViewHasAll
+
+断言响应视图具有给定的数据列表：
+
+    $response->assertViewHasAll(array $data);
+
+该方法可用于断言该视图仅包含与给定键匹配的数据：
+
+    $response->assertViewHasAll([
+        'name',
+        'email',
+    ]);
+
+或者，你可以断言该视图数据存在并且具有特定值：
+
+    $response->assertViewHasAll([
+        'name' => 'Taylor Otwell',
+        'email' => 'taylor@example.com,',
+    ]);
+
+<a name="assert-view-is"></a>
+#### assertViewIs
+
+断言当前路由返回的的视图是给定的视图：
+
+    $response->assertViewIs($value);
+
+<a name="assert-view-missing"></a>
+#### assertViewMissing
+
+断言给定的数据键不可用于应用程序响应中返回的视图：
+
+    $response->assertViewMissing($key);
+
+<a name="authentication-assertions"></a>
+### 身份验证断言
+
+Laravel 还提供了各种与身份验证相关的断言，你可以在应用程序的功能测试中使用它们。请注意，这些方法是在测试类本身上调用的，而不是由诸如 `get` 和 `post` 等方法返回的 `Illuminate\Testing\TestResponse` 实例。
+
+<a name="assert-authenticated"></a>
+#### assertAuthenticated
+
+断言用户已通过身份验证：
+
+    $this->assertAuthenticated($guard = null);
+
+<a name="assert-guest"></a>
+#### assertGuest
+
+断言用户未通过身份验证：
+
+    $this->assertGuest($guard = null);
+
+<a name="assert-authenticated-as"></a>
+#### assertAuthenticatedAs
+
+断言特定用户已通过身份验证：
+
+    $this->assertAuthenticatedAs($user, $guard = null);
+
+<a name="validation-assertions"></a>
+## 验证断言
+
+Laravel 提供了两个主要的验证相关的断言，你可以用它来确保在你的请求中提供的数据是有效或无效的。
+
+<a name="validation-assert-valid"></a>
+#### assertValid
+
+断言响应对于给定的键没有验证错误。该方法可用于断言响应中的验证错误是以 JSON 结构返回的，或者验证错误已经闪现到会话中。
+
+    // 断言没有验证错误存在...
+    $response->assertValid();
+
+    //断言给定的键没有验证错误...
+    $response->assertValid(['name', 'email']);
+
+<a name="validation-assert-invalid"></a>
+#### assertInvalid
+
+断言响应对给定的键有验证错误。这个方法可用于断言响应中的验证错误是以 JSON 结构返回的，或者验证错误已经被闪现到会话中。
+```php
+    $response->assertInvalid(['name', 'email']);
 ```
-
-## 初始配置
-Laravel 框架的所有配置文件都存储在 `config` 目录中。每个选项都有文档记录，所以请随意浏览这些文件并熟悉可用的选项。
-
-Laravel 几乎不需要额外的配置。你可以自由地开始开发！然而，你可能希望查看 `config/app.php` 文件及其文档。它包含几个选项，比如 `timezone` 和 `locale`，你可能希望根据你的应用程序进行更改。
-
-<a name="environment-based-configuration"></a>
-
-#### 目录权限
-
-安装完 Laravel 后，你可能需要给这两个文件配置读写权限：`storage` 目录和 `bootstrap/cache` 目录应该允许 Web 服务器写入，否则 Laravel 程序将无法运行。
-### 基于环境的配置
-
-由于 Laravel 的许多配置选项值可能会根据你的应用程序是在本地计算机上还是在生产 Web 服务器上运行而有所不同，因此许多重要的配置值是使用 `.env` 存在于应用程序根目录中的文件来定义的。
-
-你的 `.env` 文件不应提交到应用程序的源代码管理，因为每个使用你的应用程序的开发人员/服务器可能需要不同的环境配置。此外，如果入侵者获得对你的源代码控制存储库的访问权限，这将是一个安全风险，因为任何敏感凭据都会被暴露。
-
-> 技巧：有关 `.env` 基于文件和环境的配置的更多信息，请查看完整的 [配置文档](/docs/laravel/9.x/configuration#environment-configuration)。
-
-<a name="directory-configuration"></a>
-### 目录配置
-
-Laravel 应该始终从为你的 Web 服务器配置的「Web 目录」的根目录中提供服务。你不应该尝试从「Web 目录」的子目录中提供 Laravel 应用程序。尝试这样做可能会暴露应用程序中存在的敏感文件。
-
-<a name="next-steps"></a>
-## 下一步
-
-现在你已经创建了 Laravel 项目，你可能想知道接下来要学习什么。首先，我们强烈建议你通过阅读以下文档来熟悉 Laravel 的工作原理：
-
-<div class="content-list" markdown="1">
-
-- [请求生命周期](/docs/laravel/9.x/lifecycle)
-- [配置](/docs/laravel/9.x/configuration)
-- [目录结构](/docs/laravel/9.x/structure)
-- [服务容器](/docs/laravel/9.x/container)
-- [Facades](/docs/laravel/9.x/facades)
-
-</div>
-
-你想如何使用 Laravel 也将决定你旅程的下一步。有多种使用 Laravel 的方法，我们将探讨以下框架的两个主要用例。
-
-<a name="laravel-the-fullstack-framework"></a>
-### Laravel 全栈框架
-
-Laravel 可以作为一个全栈框架。「全栈」框架是指你将使用 Laravel 将请求路由到你的应用程序，并通过 [Blade 模板](/docs/laravel/9.x/blade) 或使用单页应用程序混合技术 [Inertia.js](https://inertiajs.com) 呈现你的前端。这是使用 Laravel 框架最常见的方式。
-
-如果这是你计划使用 Laravel 的方式，你可能需要查看我们关于 [路由](/docs/laravel/9.x/routing)，[视图](/docs/laravel/9.x/views)，或者 [Eloquent ORM](/docs/laravel/9.x/eloquent) 的文档。此外，你可能有兴趣了解 [Livewire](https://laravel-livewire.com) 和 [Inertia.js](https://inertiajs.com) 等社区软件包。这些包允许你将 Laravel 用作全栈框架，同时享受单页 JavaScript 应用程序提供的许多 UI 优势。
-
-如果你使用 Laravel 作为全栈框架，我们也强烈建议你学习如何使用 [Laravel Mix](/docs/laravel/9.x/mix) 编译应用程序的 CSS 和 JavaScript 。
-
-> 技巧：如果你想尽快构建你的应用程序，请查看我们的官方 [应用程序入门工具包](/docs/laravel/9.x/starter-kits)。
-
-<a name="laravel-the-api-backend"></a>
-### Laravel API 后端
-
-Laravel 也可以作为 JavaScript 单页应用程序或移动应用程序的 API 后端。例如，你可以使用 Laravel 作为 [Next.js](https://nextjs.org) 应用程序的 API 后端。在这种情况下，你可以使用 Laravel 为你的应用程序提供 [身份验证](/docs/laravel/9.x/sanctum) 和数据存储/检索，同时还可以利用 Laravel 的强大服务，例如队列、电子邮件、通知等。
-
-如果这是你计划使用 Laravel 的方式，你可能需要查看我们关于 [路由](/docs/laravel/9.x/routing), [Laravel Sanctum](/docs/laravel/9.x/sanctum) 和 [Eloquent ORM](/docs/laravel/9.x/eloquent) 的文档。
-
-> 技巧：需要抢先搭建 Laravel 后端和 Next.js 前端的脚手架？Laravel Breeze 提供了 [API 堆栈](/docs/laravel/9.x/starter-kits#breeze-and-next) 以及 [Next.js 前端实现](https://github.com/laravel/breeze-next) ，因此你可以在几分钟内开始使用。
+你也可以断言一个给定的键有一个特定的验证错误信息。当这样做时，你可以提供整个消息或只提供消息的一小部分。
+```php
+    $response->assertInvalid([
+        'name' => 'The name field is required.',
+        'email' => 'valid email address',
+    ]);
+```

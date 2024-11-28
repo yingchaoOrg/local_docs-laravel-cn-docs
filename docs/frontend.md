@@ -1,96 +1,190 @@
-# Laravel 的前端资源处理 JavaScript＆CSS 构建
+# 前端
 
-- [简介](#introduction)
-- [编写 CSS](#writing-css)
-- [编写 JavaScript](#writing-javascript)
-    - [编写 Vue 组件](#writing-vue-components)
-    - [使用 React](#using-react)
+- [介绍](#introduction)
+- [使用 PHP](#using-php)
+    - [PHP 和 Blade](#php-and-blade)
+    - [Livewire](#livewire)
+    - [入门套件](#php-starter-kits)
+- [使用 Vue / React](#using-vue-react)
+    - [Inertia](#inertia)
+    - [入门套件](#inertia-starter-kits)
+- [打包资源](#bundling-assets)
 
 <a name="introduction"></a>
-## 简介
+## 介绍
 
-Laravel 并没有规定你使用哪个 JavaScript 或 CSS 预处理器，不过它还是提供了对大多数应用都很适用的 [Bootstrap](http://getbootstrap.com) 和 [Vue](https://vuejs.org) 来作为默认的起点。默认情况下，Laravel 使用 [NPM](https://npmjs.org) 安装这两个前端依赖。
+Laravel 是一个后端框架，提供了构建现代 Web 应用所需的所有功能，例如 [路由](/docs/laravel/10.x/routing)、[验证](/docs/laravel/10.x/validation)、[缓存](/docs/laravel/10.x/cache)、[队列](/docs/laravel/10.x/queues)、[文件存储](/docs/laravel/10.x/filesystem) 等等。然而，我们认为为开发人员提供美观的全栈体验，包括构建应用前端的强大方法，是非常重要的。
 
-#### CSS
+在使用 Laravel 构建应用时，有两种主要的方式来解决前端开发问题，选择哪种方式取决于你是否想通过 PHP 或使用像 Vue 和 React 这样的 JavaScript 框架来构建前端。我们将在下面讨论这两种选项，以便你可以做出有关应用程序前端开发的最佳方法的明智决策。
 
-[Laravel Mix](/docs/{{version}}/mix) 提供了一个内容丰富且简洁的 API 用以编译 SASS 或 Less，这些 CSS 预处理语言扩充了 CSS 语言，增加了诸如变量、mixins 及其他一些功能强大的扩展让编写 CSS 代码变得更加有趣。尽管我们会在这里简要的讨论 CSS 编译的内容，但你应该查阅 [Laravel Mix 文档](/docs/{{version}}/mix) 获取更多关于编译 SASS 或 Less 的信息。
+<a name="using-php"></a>
+## 使用 PHP
 
-#### JavaScript
+<a name="php-and-blade"></a>
+### PHP 和 Blade
 
-Laravel 并不需要你使用特定的 JavsScript 框架或者库来构建应用程序。事实上，你也可以完全不用 JavaScript。不过，Laravel 自带了一些基本的脚手架，能更容易地使用 [Vue](https://vuejs.org) 编写 JavaScript。Vue 提供了健壮的组件化 API 用来构建强大的 JavaScript 应用程序。与 CSS 一样，我们可以使用 Laravel Mix 轻松地将 JavaScript 组件编译成一个浏览器可使用的 JavaScript 文件。
+过去，大多数 PHP 应用程序使用简单的 HTML 模板和 PHP `echo` 语句将数据呈现给浏览器，这些语句在请求期间从数据库检索数据：
 
-#### 移除前端脚手架
+```blade
+<div>
+    <?php foreach ($users as $user): ?>
+        Hello, <?php echo $user->name; ?> <br />
+    <?php endforeach; ?>
+</div>
+```
 
-如果要从你的应用程序中移除前端脚手架，可以使用 Artisan 命令 `preset`。该命令加上 `none` 选项时，将从应用程序中删除 Bootstrap 和 Vue 脚手架，只留下一个空白的 SASS 文件和一些常用的 JavaScript 实用程序库:
+在 Laravel 中，仍可以使用 视图 和 Blade 来实现呈现 HTML 的这种方法。Blade 是一种非常轻量级的模板语言，提供方便、简短的语法，用于显示数据、迭代数据等：
 
-    php artisan preset none
-<a name="writing-css"></a>
-## 编写 CSS
+```blade
+<div>
+    @foreach ($users as $user)
+        Hello, {{ $user->name }} <br />
+    @endforeach
+</div>
+```
 
- Laravel 的 `package.json` 文件引入了 `bootstrap-sass` 依赖包，可以帮助你使用 Bootstrap 构建应用程序的前端原型。不过，你可以根据自己应用程序的需要在 `package.json` 灵活的添加或者移除依赖包。你不是一定要使用 Bootstrap 框架来构建你的 Laravel 应用程序，它只是给那些想用它的人提供一个很好的起点。
+当使用这种方法构建应用程序时，表单提交和其他页面交互通常会从服务器接收一个全新的 HTML 文档，整个页面将由浏览器重新渲染。即使今天，许多应用程序也可能非常适合使用简单的 Blade 模板构建其前端。
 
-在编译 CSS 代码之前，需要你先使用  [Node 包管理工具(NPM)](https://www.npmjs.org/) 来安装项目的前端依赖：
+<a name="growing-expectations"></a>
+#### 不断提高的期望
 
-    npm install
+然而，随着用户对 Web 应用程序的期望不断提高，许多开发人员发现需要构建更具有互动性和更具现代感的动态前端。为此，一些开发人员选择使用诸如 Vue 和 React 等 JavaScript 框架开始构建应用程序的前端。
 
-使用 `npm install` 成功安装依赖后，你就可以使用 [Laravel Mix](/docs/{{version}}/mix#working-with-stylesheets) 来将 SASS 文件编译为纯 CSS。`npm run dev` 命令会处理 `webpack.mix.js` 文件中的指令。通常情况下，编译好的 CSS 代码会被放置在 `public/css` 目录：
+其他人则更喜欢使用他们熟悉的后端语言，开发出可利用他们首选的后端语言构建现代 Web 应用程序 UI 的解决方案。例如，在[Rails](https://rubyonrails.org/)生态系统中，这促使了诸如[Turbo](https://turbo.hotwired.dev/)、[Hotwire](https://hotwired.dev/)和[Stimulus](https://stimulus.hotwired.dev/)等库的创建。
 
-    npm run dev
+在 Laravel 生态系统中，需要主要使用PHP创建现代动态前端已经导致了[Laravel Livewire](https://laravel-livewire.com/)和[Alpine.js](https://alpinejs.dev/)的创建。
 
-Laravel 自带的 `webpack.mix.js` 默认会编译 `resources/assets/sass/app.scss` SASS 文件。`app.scss` 文件导入了一个包含 SASS 变量的文件，并加载 Bootstrap，这对大多数程序来说很方便。你也可以根据自己的需要去定制 `app.scss` 文件的内容，甚至使用完全不同的预处理器，详细配置见 [配置 Laravel Mix](/docs/{{version}}/mix)。
+<a name="livewire"></a>
+### Livewire
 
-<a name="writing-javascript"></a>
-## 编写 JavaScript
+[Laravel Livewire](https://laravel-livewire.com/)是一个用于构建 Laravel 前端的框架，具有与使用现代 JavaScript 框架（如 Vue 和 React ）构建的前端一样的动态、现代和生动的感觉。
 
-在项目根目录中的 `package.json` 可以找到应用程序的所有 JavaScript 依赖。它和 `composer.json` 文件类似，不同的是它指定的是 JavaScript 的依赖而不是 PHP 的依赖。使用 [Node 包管理器 (NPM)](https://npmjs.org) 来安装这些依赖包：
+在使用 Livewire 时，你将创建 Livewire "组件"，这些组件将呈现 UI 的一个离散部分，并公开可以从应用程序的前端调用和互动的方法和数据。例如，一个简单的"计数器"组件可能如下所示：
 
-    npm install
-> {tip} 默认情况下，Laravel `package.json` 文件默认会包含一些依赖包来帮助你构建 JavaScript 应用程序，例如 `vue` 和 `axios` 。你可以根据需要在 `package.json` 中添加或者移除依赖。
 
-安装依赖之后，就可以使用  `npm run dev`  命令来 [编译资源文件](/docs/{{version}}/mix) 。Webpack 是一个为现代 JavaScript 应用而生的模块构建工具。当你运行 `npm run dev` 命令时，Webpack 会执行 `webpack.mix.js` 文件中的指令：
+    <?php
 
-    npm run dev
+    namespace App\Http\Livewire;
 
-默认情况下，Laravel 的 `webpack.mix.js` 会编译 SASS 文件和 `resources/assets/js/app.js` 文件。你可以在 `app.js` 文件中注册你的 Vue 组件，或者如果你更喜欢其他的框架，请配置自己的 JavaScript 应用程序。编译好的 JavaScript 文件通常会放置在 `public/js` 目录。
+    use Livewire\Component;
 
-> {tip} `app.js` 会加载 `resources/assets/js/bootstrap.js` 文件来启动并 配置 Vue、Axios、jQuery 以及其他的 JavaScript 依赖。如果你有其他的 JavaScript 依赖需要去配置，你也可以在这个文件中完成。
+    class Counter extends Component
+    {
+        public $count = 0;
 
-<a name="writing-vue-components"></a>
-### 编写 Vue 组件
+        public function increment()
+        {
+            $this->count++;
+        }
 
-新 Laravel 程序默认会在 `resources/assets/js/components` 中包含一个 `ExampleComponent.vue` 的 Vue 组件。`ExampleComponent.vue` 文件是在同一文件中定义其 JavaScript 和 HTML 模板的 [单文件 Vue 组件](https://vuejs.org/guide/application.html#Single-File-Components) 的示例。它为构建 JavaScript 驱动的应用程序提供了非常方便的方法。这个示例组件已经在 `app.js` 文件中注册：
+        public function render()
+        {
+            return view('livewire.counter');
+        }
+    }
 
-    Vue.component('example-component', require('./components/ExampleConponent.vue'));
+对于计数器，相应的模板将会像这样写：
 
-在应用程序中使用组件，你只需要简单的将其放到你的 HTML 模板之中。例如，运行 Artisan 命令 `make:auth` 去生成应用的用户认证和注册的框架页面后，可以把组件放到 `home.blade.php` Blade 模板中：
+```blade
+<div>
+    <button wire:click="increment">+</button>
+    <h1>{{ $count }}</h1>
+</div>
+```
 
-    @extends('layouts.app')
+正如你所见，Livewire 使你能够编写新的 HTML 属性，例如 `wire:click`，以连接 Laravel 应用程序的前端和后端。此外，你可以使用简单的 Blade 表达式呈现组件的当前状态。
 
-    @section('content')
-        <example-component></example-component>
-    @endsection
+对于许多人来说，Livewire 改变了 Laravel 的前端开发方式，使他们可以在 Laravel 的舒适环境下构建现代、动态的 Web 应用程序。通常，使用 Livewire 的开发人员也会利用 [Alpine.js](https://alpinejs.dev/) 仅在需要时 "适度地添加" JavaScript 到他们的前端，比如为了渲染对话框窗口。
 
-> {tip} 谨记，每次修改 Vue 组件后都应该运行 `npm run dev` 命令。或者，你可以使用 `npm run watch` 命令来监控并在每次文件被修改时自动重新编译组件。
+如果你是 Laravel 新手，我们建议你先了解 [views](/docs/laravel/10.x/views) 和 [Blade](/docs/laravel/10.x/blade) 的基本用法。然后，查阅官方的 [Laravel Livewire 文档](https://laravel-livewire.com/docs)，学习如何通过交互式 Livewire 组件将你的应用程序提升到新的水平。
 
-当然，如果你对编写 Vue 组件的内容感兴趣，你可以读一下 [Vue 文档](http://vuejs.org/guide/)，该文档内容全面又易于阅读。
+<a name="php-starter-kits"></a>
+### 入门套件
 
-<a name="using-react"></a>
-### 使用 React
-如果你喜欢用 React 来构建你的 JavaScript 应用程序，Laravel 很容易就能将 Vue 脚手架替换为 React 脚手架。在任何新建的 Laravel 应用程序下，你可以用 `preset` 命令加 `react` 选项:
+如果你想使用 PHP 和 Livewire 构建你的前端，你可以利用我们的 Breeze 或 Jetstream [入门套件](/docs/laravel/10.x/starter-kits) 来快速启动你的应用程序开发。这两个入门套件都使用 [Blade](/docs/laravel/10.x/blade) 和 [Tailwind](https://tailwindcss.com/) 构建你的应用程序后端和前端身份验证流程，让你可以轻松开始构建你的下一个大项目。
 
-    php artisan preset react
+<a name="using-vue-react"></a>
+## 使用 Vue / React
 
-该命令将移除 Vue 脚手架并用 React 脚手架替换， 包括 Laravel 自带的示例组件。
+尽管使用 Laravel 和 Livewire 可以构建现代的前端，但许多开发人员仍然喜欢利用像 Vue 或 React 这样的 JavaScript 框架的强大功能。这使开发人员能够利用通过 NPM 可用的丰富的 JavaScript 包和工具生态系统。
 
-## 译者署名
+然而，如果没有额外的工具支持，将 Laravel 与 Vue 或 React 配对会遇到各种复杂的问题，例如客户端路由、数据注入和身份验证。使用诸如 [Nuxt](https://nuxtjs.org/) 和 [Next](https://nextjs.org/) 等具有观点的 Vue / React 框架可以简化客户端路由；但是，当将类似 Laravel 这样的后端框架与这些前端框架配对时，数据注入和身份验证仍然是复杂而麻烦的问题。
 
-| 用户名 | 头像 | 职能 | 签名 |
-|---|---|---|---|
-| [@JokerLinly](https://learnku.com/users/5350)  | <img class="avatar-66 rm-style" src="https://dn-phphub.qbox.me/uploads/avatars/5350_1481857380.jpg">  | Review | Stay Hungry. Stay Foolish. |
+此外，开发人员需要维护两个单独的代码存储库，通常需要在两个存储库之间协调维护、发布和部署。虽然这些问题并非不可解决，但我们认为这不是开发应用程序的一种有成效或令人愉快的方式。
 
----
+<a name="inertia"></a>
+### Inertia
 
->
-> 转载请注明：本文档由 LearnKu 技术论坛 [learnku.com](https://learnku.com) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
->
-> 文档原地址： https://learnku.com/docs/laravel/9.x
+值得庆幸的是，Laravel 提供了两全其美的解决方案。[Inertia](https://inertiajs.com/) 可以桥接你的 Laravel 应用程序和现代 Vue 或 React 前端，使你可以使用 Vue 或 React 构建完整的现代前端，同时利用 Laravel 路由和控制器进行路由、数据注入和身份验证 - 所有这些都在单个代码存储库中完成。使用这种方法，你可以同时享受 Laravel 和 Vue / React 的全部功能，而不会破坏任何一种工具的能力。
+
+在将 Inertia 安装到你的 Laravel 应用程序后，你将像平常一样编写路由和控制器。但是，你将返回 Inertia 页面而不是从控制器返回 Blade 模板：
+
+    <?php
+
+    namespace App\Http\Controllers;
+
+    use App\Http\Controllers\Controller;
+    use App\Models\User;
+    use Inertia\Inertia;
+    use Inertia\Response;
+
+    class UserController extends Controller {
+        /**
+         * 显示给定用户的个人资料
+         */
+        public function show(string $id): Response {
+            return Inertia::render('Users/Profile', [
+                'user' => User::findOrFail($id)
+            ]);
+        }
+    }
+
+Inertia 页面对应于 Vue 或 React 组件，通常存储在应用程序的 `resources/js/Pages` 目录中。通过 `Inertia::render` 方法传递给页面的数据将用于填充页面组件的 "props"：
+
+```vue
+<script setup>
+import Layout from '@/Layouts/Authenticated.vue';
+import { Head } from '@inertiajs/vue3';
+
+const props = defineProps(['user']);
+</script>
+
+<template>
+    <Head title="用户资料" />
+
+    <Layout>
+        <template #header>
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                资料
+            </h2>
+        </template>
+
+        <div class="py-12">
+            你好，{{ user.name }}
+        </div>
+    </Layout>
+</template>
+```
+
+正如你所看到的，使用 Inertia 可以在构建前端时充分利用 Vue 或 React 的强大功能，同时为 Laravel 驱动的后端和 JavaScript 驱动的前端提供了轻量级的桥梁。
+
+#### 服务器端渲染
+
+如果你因为应用程序需要服务器端渲染而担心使用 Inertia，不用担心。Inertia 提供了 [服务器端渲染支持](https://inertiajs.com/server-side-rendering)。并且，在通过 [Laravel Forge](https://forge.laravel.com/) 部署应用程序时，轻松确保 Inertia 的服务器端渲染过程始终运行。
+
+<a name="inertia-starter-kits"></a>
+### 入门套件
+
+如果你想使用 Inertia 和 Vue / React 构建前端，可以利用我们的 Breeze 或 Jetstream [入门套件](/docs/laravel/10.x/starter-kits) 来加速应用程序的开发。这两个入门套件使用 Inertia、Vue / React、[Tailwind](https://tailwindcss.com/) 和 [Vite](https://vitejs.dev/) 构建应用程序的后端和前端身份验证流程，让你可以开始构建下一个大型项目。
+
+<a name="bundling-assets"></a>
+## 打包资源
+
+无论你选择使用 Blade 和 Livewire 还是 Vue/React 和 Inertia 来开发你的前端，你都可能需要将你的应用程序的 CSS 打包成生产就绪的资源。当然，如果你选择用 Vue 或 React 来构建你的应用程序的前端，你也需要将你的组件打包成浏览器准备好的 JavaScript 资源。
+
+默认情况下，Laravel 利用 [Vite](https://vitejs.dev) 来打包你的资源。Vite 在本地开发过程中提供了闪电般的构建时间和接近即时的热模块替换（HMR）。在所有新的 Laravel 应用程序中，包括那些使用我们的 [入门套件](/docs/laravel/10.x/starter-kit)，你会发现一个 `vite.config.js` 文件，加载我们轻量级的 Laravel Vite 插件，使 Vite 在 Laravel 应用程序中使用起来非常愉快。
+
+开始使用 Laravel 和 Vite 的最快方法是使用 [Laravel Breeze](/docs/laravel/10.x/starter-kitsmd#laravel-breeze) 开始你的应用程序的开发，我们最简单的入门套件，通过提供前端和后端的认证支架来启动你的应用程序。
+
+> **注意**
+> 关于利用 Vite 和 Laravel 的更多详细文档，请看我们的 [关于打包和编译资源的专用文档](/docs/laravel/10.x/vite)。
