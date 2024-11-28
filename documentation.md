@@ -56,6 +56,7 @@
     - [消息通知](/docs/notifications)
     - [扩展包开发](/docs/packages)
     - [队列](/docs/queues)
+    - [请求限流](/docs/rate-limiting)
     - [任务调度](/docs/scheduling)
 - ## 数据库
     - [快速入门](/docs/database)
