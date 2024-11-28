@@ -1,4 +1,4 @@
-# Laravel 9.x 中文文档
+# Laravel 10.x 中文文档
 ## 说明
 
 

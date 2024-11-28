@@ -2,11 +2,11 @@ services:
   dev:
     build:
       dockerfile: Dockerfile
-    image: ghcr.io/yingchaoorg/local_docs-laravel-cn-docs:9.0
+    image: ghcr.io/yingchaoorg/local_docs-laravel-cn-docs:10.x
     privileged: false
-    container_name: local_docs-laravel-9.0-cn-docs
+    container_name: local_docs-laravel-10.x-cn-docs
     volumes:
       - .:/usr/share/nginx/html
     tty: true
     ports:
-      - 34808:80
+      - 34809:80
