@@ -3,19 +3,21 @@
     - [发行说明](/docs/releases)
     - [升级说明](/docs/upgrade)
     - [贡献导引](/docs/contributions)
-    - [API 文档]()
+
 - ## 入门指南
     - [安装](/docs/installation)
     - [配置信息](/docs/configuration)
     - [文件夹结构](/docs/structure)
-    - [入门套件](/docs/starter-kits)
+    - [前端](/docs/frontend)
+    - [起步套件](/docs/starter-kits)
     - [部署](/docs/deployment)
+
 - ## 核心架构
     - [请求周期](/docs/lifecycle)
     - [服务容器](/docs/container)
     - [服务提供者](/docs/providers)
     - [Facades](/docs/facades)
-    - [Contracts](/docs/contracts)
+
 - ## 基础功能
     - [路由](/docs/routing)
     - [中间件](/docs/middleware)
@@ -24,39 +26,42 @@
     - [请求](/docs/requests)
     - [响应](/docs/responses)
     - [视图](/docs/views)
+    - [Blade 模板](/docs/blade)
+    - [Vite 编译 Assets](/docs/laravel-vite-compiles-assets)    
     - [URL](/docs/urls)
-    - [Session](/docs/session)
+    - [会话](/docs/session)
     - [表单验证](/docs/validation)
     - [错误与日志](/docs/errors)
     - [日志](/docs/logging)
-    - [Vite 编译 Assets](/docs/laravel-vite-compiles-assets)
-- ## 前端开发
-    - [Blade 模板](/docs/blade)
     - [本地化](/docs/localization)
-    - [前端指南](/docs/frontend)
-    - [编辑资源 Mix](/docs/mix)
-- ## 安全相关
-    - [用户认证](/docs/authentication)
-    - [API 认证](/docs/passport)
-    - [用户授权](/docs/authorization)
-    - [Email 认证](/docs/verification)
-    - [加密解密](/docs/encryption)
-    - [哈希](/docs/hashing)
-    - [重置密码](/docs/passwords)
-- ## 综合话题
+
+- ## 继续深入
     - [Artisan 命令行](/docs/artisan)
     - [广播系统](/docs/broadcasting)
     - [缓存系统](/docs/cache)
     - [集合](/docs/collections)
+    - [Contracts](/docs/contracts)
     - [事件系统](/docs/events)
     - [文件存储](/docs/filesystem)
     - [辅助函数](/docs/helpers)
     - [HTTP 客户端](/docs/http-client)
+    - [本地化](/docs/localization)
     - [邮件发送](/docs/mail)
     - [消息通知](/docs/notifications)
     - [扩展包开发](/docs/packages)
+    - [进程管理](/docs/processes)
     - [队列](/docs/queues)
+    - [请求限流](/docs/rate-limiting)
     - [任务调度](/docs/scheduling)
+    
+- ## 安全相关
+    - [用户认证](/docs/authentication)
+    - [用户授权](/docs/authorization)
+    - [Email 认证](/docs/verification)
+    - [加密解密](/docs/encryption)
+    - [哈希](/docs/hashing)
+    - [重置密码](/docs/passwords)    
+    
 - ## 数据库
     - [快速入门](/docs/database)
     - [查询构造器](/docs/database-queries)
@@ -64,6 +69,7 @@
     - [数据库迁移](/docs/migrations)
     - [数据填充](/docs/seeding)
     - [Redis](/docs/redis)
+
 - ## Eloquent ORM
     - [快速入门](/docs/eloquent)
     - [模型关联](/docs/eloquent-relationships)
@@ -71,6 +77,8 @@
     - [修改器](/docs/eloquent-mutators)
     - [API 资源](/docs/eloquent-resources)
     - [序列化](/docs/eloquent-serialization)
+    - [Eloquent：数据工厂](/docs/eloquent-factories)
+
 - ## 测试相关
     - [快速入门](/docs/testing)
     - [HTTP 测试](/docs/http-tests)
@@ -78,15 +86,23 @@
     - [浏览器测试 Dusk](/docs/dusk)
     - [数据库测试](/docs/database-testing)
     - [测试模拟器](/docs/mocking)
+
 - ## 官方扩展包
     - [交易工具包 (Stripe)](/docs/billing)
     - [交易工具包 (Paddle)](/docs/cashier-paddle)
     - [Envoy 部署工具](/docs/envoy)
     - [Fortify 授权生成器](/docs/fortify)
+    - [Homestead 虚拟机](/docs/homestead)
     - [Horizon 队列管理器](/docs/horizon)
+    - [Jetstream](/docs/jetstream)
+    - [Mix](/docs/mix)
     - [Octane（加速引擎）](/docs/octane)
     - [Passport OAuth 认证](/docs/passport)
+    - [Laravel Pennant](/docs/pennant)
+    - [Pint](/docs/pint)
     - [Sail 开发环境](/docs/sail)
     - [Sanctum API 授权](/docs/sanctum)
     - [Scout 全文搜索](/docs/scout)
     - [Socialite 社会化登录](/docs/socialite)
+    - [Telescope 调试工具](/docs/telescope)
+    - [Valet Mac 集成环境](/docs/valet)
