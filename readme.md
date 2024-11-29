@@ -1,4 +1,6 @@
 
+> [Local Docs Laravel 10 中文文档镜像](https://laravel-10.x-cn.docs.yingchao.fun/)
+
 
 > 
 > 转载请注明：本文档搬运自社区 [https://learnku.com/](https://learnku.com/) 组织翻译，详见 [翻译召集帖](https://learnku.com/laravel/t/65272)。
